@@ -2,7 +2,7 @@
 
 Our own flavor of DDRace, a Teeworlds mod. See the [website](https://ddnet.org) for more information.
 
-*Super Mario 64 in Teeworlds/DDNet by Headshotnoby*
+**Super Mario 64 in Teeworlds/DDNet by Headshotnoby**
 
 Development discussions happen on #ddnet on Quakenet ([Webchat](http://webchat.quakenet.org/?channels=ddnet&uio=d4)) or on [Discord in the developer channel](https://discord.gg/xsEd9xu).
 
