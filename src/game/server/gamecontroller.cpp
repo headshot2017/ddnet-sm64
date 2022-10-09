@@ -565,20 +565,40 @@ void IGameController::Snap(int SnappingClient)
 	CPlayer *pPlayer = SnappingClient != SERVER_DEMO_CLIENT ? GameServer()->m_apPlayers[SnappingClient] : 0;
 	CPlayer *pPlayer2;
 
-	if(pPlayer && (pPlayer->m_TimerType == CPlayer::TIMERTYPE_GAMETIMER || pPlayer->m_TimerType == CPlayer::TIMERTYPE_GAMETIMER_AND_BROADCAST) && pPlayer->GetClientVersion() >= VERSION_DDNET_GAMETICK)
+	if (g_Config.m_SvDDNet9Timer)
 	{
-		if((pPlayer->GetTeam() == TEAM_SPECTATORS || pPlayer->IsPaused()) && pPlayer->m_SpectatorID != SPEC_FREEVIEW && (pPlayer2 = GameServer()->m_apPlayers[pPlayer->m_SpectatorID]))
+		if(pPlayer && (pPlayer->m_TimerType == 0 || pPlayer->m_TimerType == 2))
 		{
-			if((pChr = pPlayer2->GetCharacter()) && pChr->m_DDRaceState == DDRACE_STARTED)
+			if((pPlayer->GetTeam() == -1 || pPlayer->IsPaused())
+				&& pPlayer->m_SpectatorID != SPEC_FREEVIEW
+				&& (pPlayer2 = GameServer()->m_apPlayers[pPlayer->m_SpectatorID]))
+			{
+				if((pChr = pPlayer2->GetCharacter()))
+					pGameInfoObj->m_RoundStartTick = (pChr->m_DDRaceState == DDRACE_STARTED)?pChr->m_StartTime:m_RoundStartTick;
+			}
+			else if((pChr = pPlayer->GetCharacter()))
+			{
+				pGameInfoObj->m_RoundStartTick = (pChr->m_DDRaceState == DDRACE_STARTED)?pChr->m_StartTime:m_RoundStartTick;
+			}
+		}
+	}
+	else
+	{
+		if(pPlayer && (pPlayer->m_TimerType == CPlayer::TIMERTYPE_GAMETIMER || pPlayer->m_TimerType == CPlayer::TIMERTYPE_GAMETIMER_AND_BROADCAST) && pPlayer->GetClientVersion() >= VERSION_DDNET_GAMETICK)
+		{
+			if((pPlayer->GetTeam() == TEAM_SPECTATORS || pPlayer->IsPaused()) && pPlayer->m_SpectatorID != SPEC_FREEVIEW && (pPlayer2 = GameServer()->m_apPlayers[pPlayer->m_SpectatorID]))
+			{
+				if((pChr = pPlayer2->GetCharacter()) && pChr->m_DDRaceState == DDRACE_STARTED)
+				{
+					pGameInfoObj->m_WarmupTimer = -pChr->m_StartTime;
+					pGameInfoObj->m_GameStateFlags |= GAMESTATEFLAG_RACETIME;
+				}
+			}
+			else if((pChr = pPlayer->GetCharacter()) && pChr->m_DDRaceState == DDRACE_STARTED)
 			{
 				pGameInfoObj->m_WarmupTimer = -pChr->m_StartTime;
 				pGameInfoObj->m_GameStateFlags |= GAMESTATEFLAG_RACETIME;
 			}
-		}
-		else if((pChr = pPlayer->GetCharacter()) && pChr->m_DDRaceState == DDRACE_STARTED)
-		{
-			pGameInfoObj->m_WarmupTimer = -pChr->m_StartTime;
-			pGameInfoObj->m_GameStateFlags |= GAMESTATEFLAG_RACETIME;
 		}
 	}
 

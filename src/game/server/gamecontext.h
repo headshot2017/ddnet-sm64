@@ -419,6 +419,8 @@ private:
 	static void ConFreezeHammer(IConsole::IResult *pResult, void *pUserData);
 	static void ConUnFreezeHammer(IConsole::IResult *pResult, void *pUserData);
 
+	static void ConMarioSpawn(IConsole::IResult *pResult, void *pUserData);
+
 	enum
 	{
 		MAX_MUTES = 32,

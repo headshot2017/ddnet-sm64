@@ -65,4 +65,7 @@ CHAT_COMMAND("teleport", "?r[player name]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConTe
 
 CHAT_COMMAND("kill", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConProtectedKill, this, "Kill yourself when kill-protected during a long game (use f1, kill for regular kill)")
 
+// SM64
+CHAT_COMMAND("mario", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConMarioSpawn, this, "Spawn Mario")
+
 #undef CHAT_COMMAND

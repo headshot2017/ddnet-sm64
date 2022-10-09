@@ -42,6 +42,12 @@
 #include "databases/connection_pool.h"
 #include "register.h"
 
+// SM64
+extern "C" {
+	#include <sha1/sha1.h>
+	#include <libsm64.h>
+}
+
 extern bool IsInterrupted();
 
 CSnapIDPool::CSnapIDPool()
@@ -2612,6 +2618,63 @@ int CServer::Run()
 		dbg_msg("server", "+-------------------------+");
 		dbg_msg("server", "| rcon password: '%s' |", Config()->m_SvRconPassword);
 		dbg_msg("server", "+-------------------------+");
+	}
+
+	// SM64
+	FILE *f = fopen("sm64.us.z64", "rb");
+
+	if (!f)
+	{
+		dbg_msg("libsm64", "Super Mario 64 US ROM not found! Please provide a ROM with the filename \"sm64.us.z64\"");
+	}
+	else
+	{
+		// load ROM into memory
+		uint8_t *romBuffer;
+		size_t romFileLength;
+
+		fseek(f, 0, SEEK_END);
+		romFileLength = (size_t)ftell(f);
+		rewind(f);
+		romBuffer = (uint8_t*)malloc(romFileLength + 1);
+		fread(romBuffer, 1, romFileLength, f);
+		romBuffer[romFileLength] = 0;
+		fclose(f);
+
+		// perform SHA-1 check to make sure it's the correct ROM
+		char hashResult[21];
+		char hashHexResult[41];
+		SHA1(hashResult, (char*)romBuffer, romFileLength);
+
+		for( int offset = 0; offset < 20; offset++)
+			sprintf( ( hashHexResult + (2*offset)), "%02x", hashResult[offset]&0xff);
+
+		const char *SM64_SHA1 = "9bef1128717f958171a4afac3ed78ee2bb4e86ce";
+		if (strcmp(hashHexResult, SM64_SHA1)) // mismatch
+		{
+			char msg[256];
+			sprintf(msg,
+				"Super Mario 64 US ROM SHA-1 mismatch!\n"
+				"Expected: %s\n"
+				"Your copy: %s\n"
+				"Please provide the correct ROM",
+				SM64_SHA1, hashHexResult);
+
+			free(romBuffer);
+			dbg_msg("libsm64", "%s", msg);
+		}
+		else
+		{
+			// Mario texture is 704x64 RGBA (it won't be used)
+			uint8_t *texture = (uint8_t*)malloc(4 * SM64_TEXTURE_WIDTH * SM64_TEXTURE_HEIGHT);
+
+			// load libsm64
+			sm64_global_terminate();
+			sm64_global_init(romBuffer, texture, [](const char *msg) {dbg_msg("libsm64", "%s", msg);});
+			dbg_msg("libsm64", "Super Mario 64 US ROM loaded!");
+			free(romBuffer);
+			free(texture);
+		}
 	}
 
 	// start game

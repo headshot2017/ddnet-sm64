@@ -7,6 +7,7 @@
 #include <game/version.h>
 
 #include "entities/character.h"
+#include "entities/mario.h"
 #include "player.h"
 #include "score.h"
 
@@ -1599,4 +1600,32 @@ void CGameContext::ConTimeCP(IConsole::IResult *pResult, void *pUserData)
 
 	const char *pName = pResult->GetString(0);
 	pSelf->Score()->LoadPlayerData(pResult->m_ClientID, pName);
+}
+
+void CGameContext::ConMarioSpawn(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID))
+		return;
+
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
+	if (!pPlayer) return;
+
+	// check if Mario is already spawned
+	for (CEntity *e = pSelf->m_World.FindFirst(CGameWorld::ENTTYPE_MARIO); ; e = e->TypeNext())
+	{
+		if (!e) break;
+		CMario *m = (CMario*)e;
+
+		if (m->Owner() == pResult->m_ClientID)
+		{
+			e->Destroy();
+			return;
+		}
+	}
+
+	CCharacter *pChar = pPlayer->GetCharacter();
+	if(!pChar) return;
+
+	new CMario(&pSelf->m_World, pChar->m_Pos, pResult->m_ClientID);
 }

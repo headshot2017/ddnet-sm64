@@ -2315,6 +2315,8 @@ if(SERVER)
     entities/laser.h
     entities/light.cpp
     entities/light.h
+    entities/mario.cpp
+    entities/mario.h
     entities/pickup.cpp
     entities/pickup.h
     entities/plasma.cpp
@@ -2378,6 +2380,8 @@ if(SERVER)
     ${CMAKE_THREAD_LIBS_INIT}
   )
 
+  add_subdirectory(libsm64)
+
   # Target
   set(TARGET_SERVER ${SERVER_EXECUTABLE})
   add_executable(${TARGET_SERVER}
@@ -2387,8 +2391,8 @@ if(SERVER)
     $<TARGET_OBJECTS:engine-shared>
     $<TARGET_OBJECTS:game-shared>
   )
-  target_link_libraries(${TARGET_SERVER} ${LIBS_SERVER})
-  target_include_directories(${TARGET_SERVER} PRIVATE ${PNG_INCLUDE_DIRS})
+  target_link_libraries(${TARGET_SERVER} ${LIBS_SERVER} sm64)
+  target_include_directories(${TARGET_SERVER} PRIVATE ${PNG_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/libsm64/src)
   list(APPEND TARGETS_OWN ${TARGET_SERVER})
   list(APPEND TARGETS_LINK ${TARGET_SERVER})
 

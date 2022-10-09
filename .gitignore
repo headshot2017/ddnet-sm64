@@ -135,3 +135,6 @@ tags
 *.user
 *.vcxproj
 *.zip
+
+# SM64
+*.z64
