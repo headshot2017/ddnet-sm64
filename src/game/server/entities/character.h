@@ -235,6 +235,7 @@ public:
 	void SetNinjaActivationTick(int ActivationTick) { m_Core.m_Ninja.m_ActivationTick = ActivationTick; }
 	void SetNinjaCurrentMoveTime(int CurrentMoveTime) { m_Core.m_Ninja.m_CurrentMoveTime = CurrentMoveTime; }
 	CNetObj_PlayerInput *GetInput() {return &m_Input;}
+	CNetObj_PlayerInput *GetLatestInput() {return &m_LatestInput;}
 
 	int GetLastAction() const { return m_LastAction; }
 

@@ -42,8 +42,8 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 		return;
 	}
 
-	//GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_PAUSED, true);
-	//GameServer()->m_apPlayers[m_Owner]->m_SpectatorID = m_Owner;
+	GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_SPEC, true);
+	GameServer()->m_apPlayers[m_Owner]->m_SpectatorID = m_Owner;
 }
 
 void CMario::Destroy()
@@ -59,8 +59,8 @@ void CMario::Destroy()
 		marioId = -1;
 	}
 	m_MarkedForDestroy = true;
-	//if (GameServer()->m_apPlayers[m_Owner])
-		//GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_NONE, true);
+	if (GameServer()->m_apPlayers[m_Owner])
+		GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_NONE, true);
 }
 
 void CMario::Reset()
@@ -74,17 +74,17 @@ void CMario::Tick()
 
 	CPlayer *player = GameServer()->m_apPlayers[m_Owner];
 	CCharacter *character = GameServer()->GetPlayerChar(m_Owner);
-	if (!player || !character)
+	if (!player || !character || !player->IsPaused())
 	{
 		Destroy();
 		return;
 	}
 
 	player->m_SpectatorID = m_Owner;
-	input.stickX = -character->GetInput()->m_Direction;
-	input.buttonA = character->GetInput()->m_Jump;
-	input.buttonB = character->GetInput()->m_Fire & 1;
-	input.buttonZ = character->GetInput()->m_Hook;
+	input.stickX = -character->GetLatestInput()->m_Direction;
+	input.buttonA = character->GetLatestInput()->m_Jump;
+	input.buttonB = character->GetLatestInput()->m_Fire & 1;
+	input.buttonZ = character->GetLatestInput()->m_Hook;
 
 	m_Tick += 1.f/Server()->TickSpeed();
 	while (m_Tick >= 1.f/30)
@@ -103,7 +103,7 @@ void CMario::Tick()
 		player->m_ViewPos = vec2(m_Pos.x, m_Pos.y-48);
 	}
 
-	character->Core()->m_Pos = m_Pos;
+	character->Core()->m_Pos = character->m_Pos = m_Pos;
 	character->Core()->m_Vel = vec2(0,0);
 	character->ResetHook();
 }
@@ -298,7 +298,7 @@ void CMario::exportMap(int spawnX, int spawnY)
 				vertices1[1][0] = pos.x + (0 * IMARIO_SCALE);	vertices1[1][1] = pos.y + (32 * IMARIO_SCALE);	vertices1[1][2] = pos.z + (-64 * IMARIO_SCALE);
 				vertices1[2][0] = pos.x + (0 * IMARIO_SCALE);	vertices1[2][1] = pos.y + (32 * IMARIO_SCALE);	vertices1[2][2] = pos.z + (64 * IMARIO_SCALE);
 
-				vertices2[0][0] = pos.x + (0 * IMARIO_SCALE); vertices2[0][1] = pos.y + (32 * IMARIO_SCALE);	vertices2[0][2] = pos.z + (-64 * IMARIO_SCALE);
+				vertices2[0][0] = pos.x + (0 * IMARIO_SCALE); 	vertices2[0][1] = pos.y + (32 * IMARIO_SCALE);	vertices2[0][2] = pos.z + (-64 * IMARIO_SCALE);
 				vertices2[1][0] = pos.x + (32 * IMARIO_SCALE);	vertices2[1][1] = pos.y + (32 * IMARIO_SCALE);	vertices2[1][2] = pos.z + (64 * IMARIO_SCALE);
 				vertices2[2][0] = pos.x + (32 * IMARIO_SCALE);	vertices2[2][1] = pos.y + (32 * IMARIO_SCALE);	vertices2[2][2] = pos.z + (-64 * IMARIO_SCALE);
 
@@ -313,7 +313,7 @@ void CMario::exportMap(int spawnX, int spawnY)
 					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
 			}
 
-			// left (Z+)
+			// left (X-)
 			if (!left)
 			{
 				vertices1[0][2] = pos.z + (-64 * IMARIO_SCALE);	vertices1[0][1] = pos.y + (0 * IMARIO_SCALE);	vertices1[0][0] = pos.x + (0 * IMARIO_SCALE);
@@ -335,7 +335,7 @@ void CMario::exportMap(int spawnX, int spawnY)
 					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
 			}
 
-			// right (Z-)
+			// right (X+)
 			if (!right)
 			{
 				vertices1[0][2] = pos.z + (64 * IMARIO_SCALE);	vertices1[0][1] = pos.y + (0 * IMARIO_SCALE);	vertices1[0][0] = pos.x + (32 * IMARIO_SCALE);
@@ -345,6 +345,48 @@ void CMario::exportMap(int spawnX, int spawnY)
 				vertices2[0][2] = pos.z + (-64 * IMARIO_SCALE);	vertices2[0][1] = pos.y + (32 * IMARIO_SCALE);	vertices2[0][0] = pos.x + (32 * IMARIO_SCALE);
 				vertices2[1][2] = pos.z + (64 * IMARIO_SCALE);	vertices2[1][1] = pos.y + (0 * IMARIO_SCALE);	vertices2[1][0] = pos.x + (32 * IMARIO_SCALE);
 				vertices2[2][2] = pos.z + (-64 * IMARIO_SCALE);	vertices2[2][1] = pos.y + (0 * IMARIO_SCALE);	vertices2[2][0] = pos.x + (32 * IMARIO_SCALE);
+
+				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
+					vertices1[0][0], vertices1[0][1], vertices1[0][2],
+					vertices1[1][0], vertices1[1][1], vertices1[1][2],
+					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
+
+				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
+					vertices2[0][0], vertices2[0][1], vertices2[0][2],
+					vertices2[1][0], vertices2[1][1], vertices2[1][2],
+					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
+			}
+
+			// front
+			{
+				vertices1[0][0] = pos.x + (32 * IMARIO_SCALE);	vertices1[0][1] = pos.y + (0 * IMARIO_SCALE);	vertices1[0][2] = pos.z + (-64 * IMARIO_SCALE);
+				vertices1[1][0] = pos.x + (0 * IMARIO_SCALE);	vertices1[1][1] = pos.y + (32 * IMARIO_SCALE);	vertices1[1][2] = pos.z + (-64 * IMARIO_SCALE);
+				vertices1[2][0] = pos.x + (32 * IMARIO_SCALE);	vertices1[2][1] = pos.y + (32 * IMARIO_SCALE);	vertices1[2][2] = pos.z + (-64 * IMARIO_SCALE);
+
+				vertices2[0][0] = pos.x + (0 * IMARIO_SCALE);	vertices2[0][1] = pos.y + (32 * IMARIO_SCALE);	vertices2[0][2] = pos.z + (-64 * IMARIO_SCALE);
+				vertices2[1][0] = pos.x + (32 * IMARIO_SCALE);	vertices2[1][1] = pos.y + (0 * IMARIO_SCALE);	vertices2[1][2] = pos.z + (-64 * IMARIO_SCALE);
+				vertices2[2][0] = pos.x + (0 * IMARIO_SCALE);	vertices2[2][1] = pos.y + (0 * IMARIO_SCALE);	vertices2[2][2] = pos.z + (-64 * IMARIO_SCALE);
+
+				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
+					vertices1[0][0], vertices1[0][1], vertices1[0][2],
+					vertices1[1][0], vertices1[1][1], vertices1[1][2],
+					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
+
+				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
+					vertices2[0][0], vertices2[0][1], vertices2[0][2],
+					vertices2[1][0], vertices2[1][1], vertices2[1][2],
+					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
+			}
+
+			// back
+			{
+				vertices1[0][0] = pos.x + (0 * IMARIO_SCALE);	vertices1[0][1] = pos.y + (0 * IMARIO_SCALE);	vertices1[0][2] = pos.z + (64 * IMARIO_SCALE);
+				vertices1[1][0] = pos.x + (32 * IMARIO_SCALE);	vertices1[1][1] = pos.y + (32 * IMARIO_SCALE);	vertices1[1][2] = pos.z + (64 * IMARIO_SCALE);
+				vertices1[2][0] = pos.x + (0 * IMARIO_SCALE);	vertices1[2][1] = pos.y + (32 * IMARIO_SCALE);	vertices1[2][2] = pos.z + (64 * IMARIO_SCALE);
+
+				vertices2[0][0] = pos.x + (32 * IMARIO_SCALE);	vertices2[0][1] = pos.y + (32 * IMARIO_SCALE);	vertices2[0][2] = pos.z + (64 * IMARIO_SCALE);
+				vertices2[1][0] = pos.x + (0 * IMARIO_SCALE);	vertices2[1][1] = pos.y + (0 * IMARIO_SCALE);	vertices2[1][2] = pos.z + (64 * IMARIO_SCALE);
+				vertices2[2][0] = pos.x + (32 * IMARIO_SCALE);	vertices2[2][1] = pos.y + (0 * IMARIO_SCALE);	vertices2[2][2] = pos.z + (64 * IMARIO_SCALE);
 
 				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
 					vertices1[0][0], vertices1[0][1], vertices1[0][2],
