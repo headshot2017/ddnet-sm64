@@ -30,28 +30,6 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 
 	//exportMap(spawnX, spawnY);
 
-	/*
-	uint32_t surfaceCount = 2;
-	SM64Surface surfaces[surfaceCount];
-
-	for (uint32_t i=0; i<surfaceCount; i++)
-	{
-		surfaces[i].type = SURFACE_DEFAULT;
-		surfaces[i].force = 0;
-		surfaces[i].terrain = TERRAIN_STONE;
-	}
-	
-	surfaces[surfaceCount-2].vertices[0][0] = spawnX + 16384;	surfaces[surfaceCount-2].vertices[0][1] = spawnY;	surfaces[surfaceCount-2].vertices[0][2] = +128;
-	surfaces[surfaceCount-2].vertices[1][0] = spawnX - 16384;	surfaces[surfaceCount-2].vertices[1][1] = spawnY;	surfaces[surfaceCount-2].vertices[1][2] = -128;
-	surfaces[surfaceCount-2].vertices[2][0] = spawnX - 16384;	surfaces[surfaceCount-2].vertices[2][1] = spawnY;	surfaces[surfaceCount-2].vertices[2][2] = +128;
-
-	surfaces[surfaceCount-1].vertices[0][0] = spawnX - 16384;	surfaces[surfaceCount-1].vertices[0][1] = spawnY;	surfaces[surfaceCount-1].vertices[0][2] = -128;
-	surfaces[surfaceCount-1].vertices[1][0] = spawnX + 16384;	surfaces[surfaceCount-1].vertices[1][1] = spawnY;	surfaces[surfaceCount-1].vertices[1][2] = +128;
-	surfaces[surfaceCount-1].vertices[2][0] = spawnX + 16384;	surfaces[surfaceCount-1].vertices[2][1] = spawnY;	surfaces[surfaceCount-1].vertices[2][2] = -128;
-
-	sm64_static_surfaces_load(surfaces, surfaceCount);
-	*/
-
 	memset(m_currSurfaces, -1, sizeof(uint32_t) * MAX_SURFACES);
 	loadNewBlocks(Pos.x/32, -Pos.y/32);
 

@@ -27,9 +27,16 @@
 #include <game/generated/protocolglue.h>
 
 #include "entities/character.h"
+#include "entities/mario.h"
 #include "gamemodes/DDRace.h"
 #include "player.h"
 #include "score.h"
+
+// SM64
+extern "C" {
+	#include <libsm64.h>
+	#include <decomp/include/surface_terrains.h>
+}
 
 // Not thread-safe!
 class CClientChatLogger : public ILogger
@@ -3523,6 +3530,31 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 	if(GIT_SHORTREV_HASH)
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "git-revision", GIT_SHORTREV_HASH);
+
+	// SM64
+	uint32_t surfaceCount = 2;
+	SM64Surface surfaces[surfaceCount];
+
+	for (uint32_t i=0; i<surfaceCount; i++)
+	{
+		surfaces[i].type = SURFACE_DEFAULT;
+		surfaces[i].force = 0;
+		surfaces[i].terrain = TERRAIN_STONE;
+	}
+	
+	int width = Collision()->GetWidth()/2 * 32 * IMARIO_SCALE;
+	int spawnX = width;
+	int spawnY = (Collision()->GetHeight()+205) * 32 * -IMARIO_SCALE;
+	
+	surfaces[surfaceCount-2].vertices[0][0] = spawnX + width;	surfaces[surfaceCount-2].vertices[0][1] = spawnY;	surfaces[surfaceCount-2].vertices[0][2] = +128;
+	surfaces[surfaceCount-2].vertices[1][0] = spawnX - width;	surfaces[surfaceCount-2].vertices[1][1] = spawnY;	surfaces[surfaceCount-2].vertices[1][2] = -128;
+	surfaces[surfaceCount-2].vertices[2][0] = spawnX - width;	surfaces[surfaceCount-2].vertices[2][1] = spawnY;	surfaces[surfaceCount-2].vertices[2][2] = +128;
+
+	surfaces[surfaceCount-1].vertices[0][0] = spawnX - width;	surfaces[surfaceCount-1].vertices[0][1] = spawnY;	surfaces[surfaceCount-1].vertices[0][2] = -128;
+	surfaces[surfaceCount-1].vertices[1][0] = spawnX + width;	surfaces[surfaceCount-1].vertices[1][1] = spawnY;	surfaces[surfaceCount-1].vertices[1][2] = +128;
+	surfaces[surfaceCount-1].vertices[2][0] = spawnX + width;	surfaces[surfaceCount-1].vertices[2][1] = spawnY;	surfaces[surfaceCount-1].vertices[2][2] = -128;
+
+	sm64_static_surfaces_load(surfaces, surfaceCount);
 
 #ifdef CONF_DEBUG
 	if(g_Config.m_DbgDummies)
