@@ -3,6 +3,9 @@
 
 #define MARIO_SCALE 1.f
 #define IMARIO_SCALE 1
+#define MAX_SURFACES 128
+
+#include <inttypes.h>
 
 #include <game/server/entity.h>
 #include <game/server/player.h>
@@ -17,6 +20,7 @@ class CMario : public CEntity
 	float m_Tick;
 	std::vector<int> vertexIDs;
 	int m_Owner;
+	uint32_t m_currSurfaces[MAX_SURFACES];
 
 public:
 	SM64MarioState state;
@@ -32,6 +36,12 @@ public:
 	void Reset() override;
 	void Tick() override;
 	void Snap(int SnappingClient) override;
+
+	void deleteBlocks();
+	bool addBlock(int x, int y, int *i);
+	void loadNewBlocks(int x, int y);
+
+	void exportMap(int spawnX, int spawnY);
 };
 
 #endif // GAME_SERVER_ENTITIES_MARIO_H
