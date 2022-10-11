@@ -123,7 +123,7 @@ SM64_LIB_FN void sm64_global_init( uint8_t *rom, uint8_t *outTexture, SM64DebugP
 
     memory_init();
 	
-	#if HAVE_WASAPI
+	#if defined(HAVE_WASAPI) && !defined(SM64_NULL_AUDIO)
 	if (audio_api == NULL && audio_wasapi.init()) {
 		audio_api = &audio_wasapi;
 		DEBUG_PRINT("Audio API: WASAPI");

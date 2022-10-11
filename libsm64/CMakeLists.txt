@@ -21,6 +21,8 @@ file(GLOB SOURCES
 	src/decomp/pc/audio/*.c
 )
 
+option(SM64_NULL_AUDIO "libsm64: Disable audio playback" OFF)
+
 find_package(PythonInterp 3 REQUIRED)
 
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/decomp/mario)
@@ -40,20 +42,27 @@ include_directories(src/decomp/mario)
 
 target_compile_options(sm64 PRIVATE -Wall)
 target_compile_definitions(sm64 PRIVATE SM64_LIB_EXPORT VERSION_US NO_SEGMENTED_MEMORY GBI_FLOATS)
+if (SM64_NULL_AUDIO)
+	target_compile_definitions(sm64 PRIVATE SM64_NULL_AUDIO)
+endif()
 
 if (WIN32)
 	target_link_options(sm64 PRIVATE -mwindows -static -lole32 -lstdc++)
 
 elseif (APPLE)
 	find_package(SDL2 REQUIRED)
-	target_compile_definitions(sm64 PRIVATE USE_SDL2)
+	if (NOT SM64_NULL_AUDIO)
+		target_compile_definitions(sm64 PRIVATE USE_SDL2)
+	endif()
 	target_link_libraries(sm64 SDL2)
 
 elseif (UNIX)
 	find_package(ALSA REQUIRED)
 	find_package(PulseAudio REQUIRED)
 	target_compile_options(sm64 PRIVATE -fPIC)
-	target_compile_definitions(sm64 PRIVATE USE_ALSA USE_PULSEAUDIO)
+	if (NOT SM64_NULL_AUDIO)
+		target_compile_definitions(sm64 PRIVATE USE_ALSA USE_PULSEAUDIO)
+	endif()
 	target_link_options(sm64 PRIVATE -fPIC)
 	target_link_libraries(sm64 asound pulse)
 
