@@ -17,8 +17,8 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 	m_Owner = owner;
 
 	// on teeworlds, up coordinate is Y-, SM64 is Y+. flip the Y coordinate
-	int spawnX = Pos.x/IMARIO_SCALE;
-	int spawnY = -Pos.y/IMARIO_SCALE;
+	int spawnX = Pos.x*IMARIO_SCALE;
+	int spawnY = -Pos.y*IMARIO_SCALE;
 
 	geometry.position = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
 	geometry.normal   = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
@@ -53,7 +53,7 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 	*/
 
 	memset(m_currSurfaces, -1, sizeof(uint32_t) * MAX_SURFACES);
-	loadNewBlocks(spawnX/32, -spawnY/32);
+	loadNewBlocks(Pos.x/32, -Pos.y/32);
 
 	marioId = sm64_mario_create(spawnX, spawnY, 0, 0,0,0,0);
 	if (marioId == -1)
@@ -116,7 +116,7 @@ void CMario::Tick()
 		sm64_reset_mario_z(marioId);
 		sm64_mario_tick(marioId, &input, &state, &geometry);
 
-		vec2 newPos(state.position[0]*MARIO_SCALE, -state.position[1]*MARIO_SCALE);
+		vec2 newPos(state.position[0]/MARIO_SCALE, -state.position[1]/MARIO_SCALE);
 		if ((int)(newPos.x/32) != (int)(m_Pos.x/32) || (int)(newPos.y/32) != (int)(m_Pos.y/32))
 			loadNewBlocks(newPos.x/32, newPos.y/32);
 
@@ -144,7 +144,7 @@ void CMario::Snap(int SnappingClient)
 	for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
 	{
 		//if (geometry.position[i*3+2] < 0) continue; // Z coordinate
-		ivec2 vertex((int)geometry.position[i*3+0]*MARIO_SCALE, -(int)geometry.position[i*3+1]*MARIO_SCALE);
+		ivec2 vertex((int)geometry.position[i*3+0]/MARIO_SCALE, -(int)geometry.position[i*3+1]/MARIO_SCALE);
 		bool repeated = false;
 
 		for (size_t j=0; j<verticesSnapped.size(); j++)

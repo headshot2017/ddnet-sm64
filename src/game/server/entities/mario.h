@@ -1,8 +1,8 @@
 #ifndef GAME_SERVER_ENTITIES_MARIO_H
 #define GAME_SERVER_ENTITIES_MARIO_H
 
-#define MARIO_SCALE 1.f
-#define IMARIO_SCALE 1
+#define MARIO_SCALE 2.f
+#define IMARIO_SCALE 2
 #define MAX_SURFACES 128
 
 #include <inttypes.h>
