@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <stdio.h>
-#include <tchar.h>
 
 class Coordinate
 {
