@@ -1,8 +1,6 @@
 #ifndef GAME_SERVER_ENTITIES_MARIO_H
 #define GAME_SERVER_ENTITIES_MARIO_H
 
-#define MARIO_SCALE 2.f
-#define IMARIO_SCALE 2
 #define MAX_SURFACES 128
 
 #include <inttypes.h>
@@ -18,6 +16,7 @@ class CMario : public CEntity
 {
 	int marioId;
 	float m_Tick;
+	float m_Scale;
 	std::vector<int> vertexIDs;
 	int m_Owner;
 	uint32_t m_currSurfaces[MAX_SURFACES];

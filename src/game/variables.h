@@ -203,6 +203,7 @@ MACRO_CONFIG_INT(SvPractice, sv_practice, 1, 0, 1, CFGFLAG_SERVER, "Enable pract
 
 // headbot
 MACRO_CONFIG_INT(SvDDNet9Timer, sv_ddnet9_timer, 1, 0, 1, CFGFLAG_SERVER, "Use the old DDNet9-style timer which allows you to manipulate envelopes and sounds with the game/race timer")
+MACRO_CONFIG_INT(MarioScale, mario_scale, 50, 50, 500, CFGFLAG_SERVER, "Set Mario's scale. Only applies when (re)spawning Mario")
 
 MACRO_CONFIG_INT(ClVideoPauseWithDemo, cl_video_pausewithdemo, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Pause video rendering when demo playing pause")
 MACRO_CONFIG_INT(ClVideoShowhud, cl_video_showhud, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD when rendering video")
