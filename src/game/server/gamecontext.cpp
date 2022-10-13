@@ -3542,9 +3542,9 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		surfaces[i].terrain = TERRAIN_STONE;
 	}
 	
-	int width = Collision()->GetWidth()/2 * 32 * IMARIO_SCALE;
+	int width = Collision()->GetWidth()/2 * 32 * g_Config.m_MarioScale/100;
 	int spawnX = width;
-	int spawnY = (Collision()->GetHeight()+205) * 32 * -IMARIO_SCALE;
+	int spawnY = (Collision()->GetHeight()+205) * 32 * -g_Config.m_MarioScale/100;
 	
 	surfaces[surfaceCount-2].vertices[0][0] = spawnX + width;	surfaces[surfaceCount-2].vertices[0][1] = spawnY;	surfaces[surfaceCount-2].vertices[0][2] = +128;
 	surfaces[surfaceCount-2].vertices[1][0] = spawnX - width;	surfaces[surfaceCount-2].vertices[1][1] = spawnY;	surfaces[surfaceCount-2].vertices[1][2] = -128;
