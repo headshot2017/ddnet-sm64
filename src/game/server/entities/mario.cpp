@@ -16,7 +16,7 @@ extern "C" {
 #include "../quickhull/QuickHull.hpp"
 #include "../ConvexHull/ConvexHull.h"
 
-CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner, float scale) : CEntity(pGameWorld, CGameWorld::ENTTYPE_MARIO, Pos)
+CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld, CGameWorld::ENTTYPE_MARIO, Pos)
 {
 	GameWorld()->InsertEntity(this);
 	m_Owner = owner;
