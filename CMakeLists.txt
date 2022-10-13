@@ -2349,6 +2349,13 @@ if(SERVER)
     teehistorian.h
     teeinfo.cpp
     teeinfo.h
+    quickhull/ConvexHull.hpp
+    quickhull/HalfEdgeMesh.hpp
+    quickhull/MathUtils.hpp
+    quickhull/QuickHull.hpp
+    quickhull/QuickHull.cpp
+	ConvexHull/ConvexHull.cpp
+	ConvexHull/ConvexHull.h
   )
   set(GAME_GENERATED_SERVER
     "src/game/generated/server_data.cpp"

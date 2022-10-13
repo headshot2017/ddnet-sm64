@@ -3,6 +3,7 @@
 #include "character.h"
 #include "laser.h"
 #include "projectile.h"
+#include "mario.h"
 
 #include <antibot/antibot_data.h>
 
@@ -1100,6 +1101,18 @@ void CCharacter::SnapCharacter(int SnappingClient, int ID)
 
 bool CCharacter::CanSnapCharacter(int SnappingClient)
 {
+	if (m_pPlayer->GetCID() != SnappingClient)
+	{
+		for (CEntity *e = GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_MARIO); ; e = e->TypeNext())
+		{
+			if (!e) break;
+			CMario *m = (CMario*)e;
+
+			if (m->Owner() == m_pPlayer->GetCID())
+				return false;
+		}
+	}
+
 	if(SnappingClient == SERVER_DEMO_CLIENT)
 		return true;
 

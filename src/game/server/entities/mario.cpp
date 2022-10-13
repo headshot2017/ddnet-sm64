@@ -10,6 +10,8 @@ extern "C" {
 
 #include <game/generated/protocol.h>
 #include <game/server/gamecontext.h>
+#include "../quickhull/QuickHull.hpp"
+#include "../ConvexHull/ConvexHull.h"
 
 CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld, CGameWorld::ENTTYPE_MARIO, Pos)
 {
@@ -42,8 +44,8 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 		return;
 	}
 
-	GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_SPEC, true);
-	GameServer()->m_apPlayers[m_Owner]->m_SpectatorID = m_Owner;
+	//GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_SPEC, true);
+	//GameServer()->m_apPlayers[m_Owner]->m_SpectatorID = m_Owner;
 }
 
 void CMario::Destroy()
@@ -74,7 +76,7 @@ void CMario::Tick()
 
 	CPlayer *player = GameServer()->m_apPlayers[m_Owner];
 	CCharacter *character = GameServer()->GetPlayerChar(m_Owner);
-	if (!player || !character || !player->IsPaused())
+	if (!player || !character)
 	{
 		Destroy();
 		return;
@@ -119,10 +121,34 @@ void CMario::Snap(int SnappingClient)
 		Server()->SnapFreeID(id);
 	vertexIDs.clear();
 
+	/*
+	quickhull::QuickHull<float> qh; // Could be double as well
+	std::vector<quickhull::Vector3<float>> pointCloud;
 	for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
+		pointCloud.push_back(quickhull::Vector3<float>(geometry.position[i*3+0], geometry.position[i*3+1], geometry.position[i*3+2]));
+	auto hull = qh.getConvexHull(pointCloud, true, false);
+	const auto& indexBuffer = hull.getIndexBuffer();
+	const auto& vertexBuffer = hull.getVertexBuffer();
+	*/
+
+	/*
+	std::vector<Coordinate> polygonPoints;
+	for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
+		polygonPoints.push_back({geometry.position[i*3+0], geometry.position[i*3+1]});
+
+	Polygon polygon(polygonPoints);
+	std::vector<Coordinate> convexHull = polygon.ComputeConvexHull();
+	*/
+
+	for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
+	//for (size_t i=0; i<indexBuffer.size()-1; i++)
+	//for (size_t i=0; i<convexHull.size()-1; i++)
 	{
 		//if (geometry.position[i*3+2] < 0) continue; // Z coordinate
-		ivec2 vertex((int)geometry.position[i*3+0]/MARIO_SCALE, -(int)geometry.position[i*3+1]/MARIO_SCALE);
+		ivec2 vertex((int)geometry.position[i*3+0]/MARIO_SCALE, -(int)geometry.position[i*3+1]/MARIO_SCALE + 8);
+		//dbg_msg("a", "%d %d\n", i, convexHull.size()-1);
+		//ivec2 vertex((int)convexHull[i].GetX()/MARIO_SCALE, -(int)convexHull[i].GetY()/MARIO_SCALE);
+		//ivec2 vertexTo((int)convexHull[i+1].GetX()/MARIO_SCALE, -(int)convexHull[i+1].GetY()/MARIO_SCALE);
 		bool repeated = false;
 
 		for (size_t j=0; j<verticesSnapped.size(); j++)
@@ -143,8 +169,10 @@ void CMario::Snap(int SnappingClient)
 		if(!pObj)
 			continue;
 
-		pObj->m_FromX = pObj->m_X = vertex.x;
-		pObj->m_FromY = pObj->m_Y = vertex.y;
+		pObj->m_FromX = vertex.x;
+		pObj->m_FromY = vertex.y;
+		pObj->m_X = vertex.x;
+		pObj->m_Y = vertex.y;
 		pObj->m_StartTick = Server()->Tick() + Server()->TickSpeed();
 	}
 }
