@@ -20,11 +20,14 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 {
 	GameWorld()->InsertEntity(this);
 	m_Owner = owner;
-	m_Scale = g_Config.m_MarioScale/100;
+	m_Scale = g_Config.m_MarioScale/100.f;
 
 	// on teeworlds, up coordinate is Y-, SM64 is Y+. flip the Y coordinate
-	int spawnX = Pos.x*m_Scale;
-	int spawnY = -Pos.y*m_Scale;
+	// scale conversions:
+	//    teeworlds -> sm64: divide
+	//    sm64 -> teeworlds: multiply
+	int spawnX = Pos.x/m_Scale;
+	int spawnY = -Pos.y/m_Scale;
 
 	geometry.position = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
 	geometry.normal   = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
@@ -100,7 +103,7 @@ void CMario::Tick()
 		sm64_reset_mario_z(marioId);
 		sm64_mario_tick(marioId, &input, &state, &geometry);
 
-		vec2 newPos(state.position[0]/m_Scale, -state.position[1]/m_Scale);
+		vec2 newPos(state.position[0]*m_Scale, -state.position[1]*m_Scale);
 		if ((int)(newPos.x/32) != (int)(m_Pos.x/32) || (int)(newPos.y/32) != (int)(m_Pos.y/32))
 			loadNewBlocks(newPos.x/32, newPos.y/32);
 
@@ -199,8 +202,8 @@ bool CMario::addBlock(int x, int y, int *i)
 
 	struct SM64SurfaceObject obj;
 	memset(&obj.transform, 0, sizeof(struct SM64ObjectTransform));
-	obj.transform.position[0] = x*32 * m_Scale;
-	obj.transform.position[1] = (-y*32-16) * m_Scale;
+	obj.transform.position[0] = x*32 / m_Scale;
+	obj.transform.position[1] = (-y*32-16) / m_Scale;
 	obj.transform.position[2] = 0;
 	obj.surfaceCount = 0;
 	obj.surfaces = (struct SM64Surface*)malloc(sizeof(struct SM64Surface) * 4*2);
@@ -213,13 +216,13 @@ bool CMario::addBlock(int x, int y, int *i)
 	// block ground face
 	if (!up)
 	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 * m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 / m_Scale;
 
-		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 0 * m_Scale; 		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 * m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 0 / m_Scale; 		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 / m_Scale;
 
 		obj.surfaceCount += 2;
 	}
@@ -227,13 +230,13 @@ bool CMario::addBlock(int x, int y, int *i)
 	// left (Z+)
 	if (!left)
 	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = -64 * m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 0 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = 64 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = -64 * m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 0 * m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 0 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 0 / m_Scale;
 
-		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = 64 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 0 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = -64 * m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 0 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = 64 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 0 * m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 0 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 0 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 0 / m_Scale;
 
 		obj.surfaceCount += 2;
 	}
@@ -241,13 +244,13 @@ bool CMario::addBlock(int x, int y, int *i)
 	// right (Z-)
 	if (!right)
 	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 32 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 * m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 32 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 32 * m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 32 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 32 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 32 / m_Scale;
 
-		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 * m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 32 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 * m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 32 * m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 32 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 32 / m_Scale;
 
 		obj.surfaceCount += 2;
 	}
@@ -255,13 +258,13 @@ bool CMario::addBlock(int x, int y, int *i)
 	// block bottom face
 	if (!down)
 	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 * m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 / m_Scale;
 
-		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 * m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 * m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 * m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 / m_Scale;
+		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 / m_Scale;
 
 		obj.surfaceCount += 2;
 	}
@@ -314,7 +317,7 @@ void CMario::exportMap(int spawnX, int spawnY)
 			bool block = GameServer()->Collision()->CheckPoint(x*32, y*32);
 			if (!block) continue;
 
-			vec3 pos(x*32 * m_Scale, (-y*32-16) * m_Scale, 0);
+			vec3 pos(x*32 / m_Scale, (-y*32-16) / m_Scale, 0);
 
 			bool up =		GameServer()->Collision()->CheckPoint(x*32, y*32-32);
 			bool down =		GameServer()->Collision()->CheckPoint(x*32, y*32+32);
@@ -326,13 +329,13 @@ void CMario::exportMap(int spawnX, int spawnY)
 			// block ground face
 			if (!up)
 			{
-				vertices1[0][0] = pos.x + (32 * m_Scale);	vertices1[0][1] = pos.y + (32 * m_Scale);	vertices1[0][2] = pos.z + (64 * m_Scale);
-				vertices1[1][0] = pos.x + (0 * m_Scale);	vertices1[1][1] = pos.y + (32 * m_Scale);	vertices1[1][2] = pos.z + (-64 * m_Scale);
-				vertices1[2][0] = pos.x + (0 * m_Scale);	vertices1[2][1] = pos.y + (32 * m_Scale);	vertices1[2][2] = pos.z + (64 * m_Scale);
+				vertices1[0][0] = pos.x + (32 / m_Scale);	vertices1[0][1] = pos.y + (32 / m_Scale);	vertices1[0][2] = pos.z + (64 / m_Scale);
+				vertices1[1][0] = pos.x + (0 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][2] = pos.z + (-64 / m_Scale);
+				vertices1[2][0] = pos.x + (0 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][2] = pos.z + (64 / m_Scale);
 
-				vertices2[0][0] = pos.x + (0 * m_Scale); 	vertices2[0][1] = pos.y + (32 * m_Scale);	vertices2[0][2] = pos.z + (-64 * m_Scale);
-				vertices2[1][0] = pos.x + (32 * m_Scale);	vertices2[1][1] = pos.y + (32 * m_Scale);	vertices2[1][2] = pos.z + (64 * m_Scale);
-				vertices2[2][0] = pos.x + (32 * m_Scale);	vertices2[2][1] = pos.y + (32 * m_Scale);	vertices2[2][2] = pos.z + (-64 * m_Scale);
+				vertices2[0][0] = pos.x + (0 / m_Scale); 	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][2] = pos.z + (-64 / m_Scale);
+				vertices2[1][0] = pos.x + (32 / m_Scale);	vertices2[1][1] = pos.y + (32 / m_Scale);	vertices2[1][2] = pos.z + (64 / m_Scale);
+				vertices2[2][0] = pos.x + (32 / m_Scale);	vertices2[2][1] = pos.y + (32 / m_Scale);	vertices2[2][2] = pos.z + (-64 / m_Scale);
 
 				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
 					vertices1[0][0], vertices1[0][1], vertices1[0][2],
@@ -348,13 +351,13 @@ void CMario::exportMap(int spawnX, int spawnY)
 			// left (X-)
 			if (!left)
 			{
-				vertices1[0][2] = pos.z + (-64 * m_Scale);	vertices1[0][1] = pos.y + (0 * m_Scale);	vertices1[0][0] = pos.x + (0 * m_Scale);
-				vertices1[1][2] = pos.z + (64 * m_Scale);	vertices1[1][1] = pos.y + (32 * m_Scale);	vertices1[1][0] = pos.x + (0 * m_Scale);
-				vertices1[2][2] = pos.z + (-64 * m_Scale);	vertices1[2][1] = pos.y + (32 * m_Scale);	vertices1[2][0] = pos.x + (0 * m_Scale);
+				vertices1[0][2] = pos.z + (-64 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][0] = pos.x + (0 / m_Scale);
+				vertices1[1][2] = pos.z + (64 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][0] = pos.x + (0 / m_Scale);
+				vertices1[2][2] = pos.z + (-64 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][0] = pos.x + (0 / m_Scale);
 
-				vertices2[0][2] = pos.z + (64 * m_Scale);	vertices2[0][1] = pos.y + (32 * m_Scale);	vertices2[0][0] = pos.x + (0 * m_Scale);
-				vertices2[1][2] = pos.z + (-64 * m_Scale);	vertices2[1][1] = pos.y + (0 * m_Scale);	vertices2[1][0] = pos.x + (0 * m_Scale);
-				vertices2[2][2] = pos.z + (64 * m_Scale);	vertices2[2][1] = pos.y + (0 * m_Scale);	vertices2[2][0] = pos.x + (0 * m_Scale);
+				vertices2[0][2] = pos.z + (64 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][0] = pos.x + (0 / m_Scale);
+				vertices2[1][2] = pos.z + (-64 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][0] = pos.x + (0 / m_Scale);
+				vertices2[2][2] = pos.z + (64 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][0] = pos.x + (0 / m_Scale);
 
 				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
 					vertices1[0][0], vertices1[0][1], vertices1[0][2],
@@ -370,13 +373,13 @@ void CMario::exportMap(int spawnX, int spawnY)
 			// right (X+)
 			if (!right)
 			{
-				vertices1[0][2] = pos.z + (64 * m_Scale);	vertices1[0][1] = pos.y + (0 * m_Scale);	vertices1[0][0] = pos.x + (32 * m_Scale);
-				vertices1[1][2] = pos.z + (-64 * m_Scale);	vertices1[1][1] = pos.y + (32 * m_Scale);	vertices1[1][0] = pos.x + (32 * m_Scale);
-				vertices1[2][2] = pos.z + (64 * m_Scale);	vertices1[2][1] = pos.y + (32 * m_Scale);	vertices1[2][0] = pos.x + (32 * m_Scale);
+				vertices1[0][2] = pos.z + (64 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][0] = pos.x + (32 / m_Scale);
+				vertices1[1][2] = pos.z + (-64 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][0] = pos.x + (32 / m_Scale);
+				vertices1[2][2] = pos.z + (64 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][0] = pos.x + (32 / m_Scale);
 
-				vertices2[0][2] = pos.z + (-64 * m_Scale);	vertices2[0][1] = pos.y + (32 * m_Scale);	vertices2[0][0] = pos.x + (32 * m_Scale);
-				vertices2[1][2] = pos.z + (64 * m_Scale);	vertices2[1][1] = pos.y + (0 * m_Scale);	vertices2[1][0] = pos.x + (32 * m_Scale);
-				vertices2[2][2] = pos.z + (-64 * m_Scale);	vertices2[2][1] = pos.y + (0 * m_Scale);	vertices2[2][0] = pos.x + (32 * m_Scale);
+				vertices2[0][2] = pos.z + (-64 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][0] = pos.x + (32 / m_Scale);
+				vertices2[1][2] = pos.z + (64 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][0] = pos.x + (32 / m_Scale);
+				vertices2[2][2] = pos.z + (-64 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][0] = pos.x + (32 / m_Scale);
 
 				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
 					vertices1[0][0], vertices1[0][1], vertices1[0][2],
@@ -391,13 +394,13 @@ void CMario::exportMap(int spawnX, int spawnY)
 
 			// front
 			{
-				vertices1[0][0] = pos.x + (32 * m_Scale);	vertices1[0][1] = pos.y + (0 * m_Scale);	vertices1[0][2] = pos.z + (-64 * m_Scale);
-				vertices1[1][0] = pos.x + (0 * m_Scale);	vertices1[1][1] = pos.y + (32 * m_Scale);	vertices1[1][2] = pos.z + (-64 * m_Scale);
-				vertices1[2][0] = pos.x + (32 * m_Scale);	vertices1[2][1] = pos.y + (32 * m_Scale);	vertices1[2][2] = pos.z + (-64 * m_Scale);
+				vertices1[0][0] = pos.x + (32 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][2] = pos.z + (-64 / m_Scale);
+				vertices1[1][0] = pos.x + (0 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][2] = pos.z + (-64 / m_Scale);
+				vertices1[2][0] = pos.x + (32 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][2] = pos.z + (-64 / m_Scale);
 
-				vertices2[0][0] = pos.x + (0 * m_Scale);	vertices2[0][1] = pos.y + (32 * m_Scale);	vertices2[0][2] = pos.z + (-64 * m_Scale);
-				vertices2[1][0] = pos.x + (32 * m_Scale);	vertices2[1][1] = pos.y + (0 * m_Scale);	vertices2[1][2] = pos.z + (-64 * m_Scale);
-				vertices2[2][0] = pos.x + (0 * m_Scale);	vertices2[2][1] = pos.y + (0 * m_Scale);	vertices2[2][2] = pos.z + (-64 * m_Scale);
+				vertices2[0][0] = pos.x + (0 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][2] = pos.z + (-64 / m_Scale);
+				vertices2[1][0] = pos.x + (32 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][2] = pos.z + (-64 / m_Scale);
+				vertices2[2][0] = pos.x + (0 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][2] = pos.z + (-64 / m_Scale);
 
 				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
 					vertices1[0][0], vertices1[0][1], vertices1[0][2],
@@ -412,13 +415,13 @@ void CMario::exportMap(int spawnX, int spawnY)
 
 			// back
 			{
-				vertices1[0][0] = pos.x + (0 * m_Scale);	vertices1[0][1] = pos.y + (0 * m_Scale);	vertices1[0][2] = pos.z + (64 * m_Scale);
-				vertices1[1][0] = pos.x + (32 * m_Scale);	vertices1[1][1] = pos.y + (32 * m_Scale);	vertices1[1][2] = pos.z + (64 * m_Scale);
-				vertices1[2][0] = pos.x + (0 * m_Scale);	vertices1[2][1] = pos.y + (32 * m_Scale);	vertices1[2][2] = pos.z + (64 * m_Scale);
+				vertices1[0][0] = pos.x + (0 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][2] = pos.z + (64 / m_Scale);
+				vertices1[1][0] = pos.x + (32 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][2] = pos.z + (64 / m_Scale);
+				vertices1[2][0] = pos.x + (0 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][2] = pos.z + (64 / m_Scale);
 
-				vertices2[0][0] = pos.x + (32 * m_Scale);	vertices2[0][1] = pos.y + (32 * m_Scale);	vertices2[0][2] = pos.z + (64 * m_Scale);
-				vertices2[1][0] = pos.x + (0 * m_Scale);	vertices2[1][1] = pos.y + (0 * m_Scale);	vertices2[1][2] = pos.z + (64 * m_Scale);
-				vertices2[2][0] = pos.x + (32 * m_Scale);	vertices2[2][1] = pos.y + (0 * m_Scale);	vertices2[2][2] = pos.z + (64 * m_Scale);
+				vertices2[0][0] = pos.x + (32 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][2] = pos.z + (64 / m_Scale);
+				vertices2[1][0] = pos.x + (0 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][2] = pos.z + (64 / m_Scale);
+				vertices2[2][0] = pos.x + (32 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][2] = pos.z + (64 / m_Scale);
 
 				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
 					vertices1[0][0], vertices1[0][1], vertices1[0][2],
@@ -434,13 +437,13 @@ void CMario::exportMap(int spawnX, int spawnY)
 			// block bottom face
 			if (!down)
 			{
-				vertices1[0][0] = pos.x + (0 * m_Scale);	vertices1[0][1] = pos.y + (0 * m_Scale);	vertices1[0][2] = pos.z + (64 * m_Scale);
-				vertices1[1][0] = pos.x + (0 * m_Scale);	vertices1[1][1] = pos.y + (0 * m_Scale);	vertices1[1][2] = pos.z + (-64 * m_Scale);
-				vertices1[2][0] = pos.x + (32 * m_Scale);	vertices1[2][1] = pos.y + (0 * m_Scale);	vertices1[2][2] = pos.z + (64 * m_Scale);
+				vertices1[0][0] = pos.x + (0 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][2] = pos.z + (64 / m_Scale);
+				vertices1[1][0] = pos.x + (0 / m_Scale);	vertices1[1][1] = pos.y + (0 / m_Scale);	vertices1[1][2] = pos.z + (-64 / m_Scale);
+				vertices1[2][0] = pos.x + (32 / m_Scale);	vertices1[2][1] = pos.y + (0 / m_Scale);	vertices1[2][2] = pos.z + (64 / m_Scale);
 
-				vertices2[0][0] = pos.x + (32 * m_Scale);	vertices2[0][1] = pos.y + (0 * m_Scale);	vertices2[0][2] = pos.z + (-64 * m_Scale);
-				vertices2[1][0] = pos.x + (32 * m_Scale);	vertices2[1][1] = pos.y + (0 * m_Scale);	vertices2[1][2] = pos.z + (64 * m_Scale);
-				vertices2[2][0] = pos.x + (0 * m_Scale);	vertices2[2][1] = pos.y + (0 * m_Scale);	vertices2[2][2] = pos.z + (-64 * m_Scale);
+				vertices2[0][0] = pos.x + (32 / m_Scale);	vertices2[0][1] = pos.y + (0 / m_Scale);	vertices2[0][2] = pos.z + (-64 / m_Scale);
+				vertices2[1][0] = pos.x + (32 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][2] = pos.z + (64 / m_Scale);
+				vertices2[2][0] = pos.x + (0 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][2] = pos.z + (-64 / m_Scale);
 
 				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
 					vertices1[0][0], vertices1[0][1], vertices1[0][2],
