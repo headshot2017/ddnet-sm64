@@ -251,6 +251,8 @@ public:
 	bool IsSuper() { return m_Core.m_Super; }
 
 	CSaveTee &GetRescueTeeRef() { return m_RescueTee; }
+
+	void SetJumping(bool on);
 };
 
 enum

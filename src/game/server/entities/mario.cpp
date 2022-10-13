@@ -53,6 +53,23 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 
 	//GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_SPEC, true);
 	//GameServer()->m_apPlayers[m_Owner]->m_SpectatorID = m_Owner;
+
+	// disable jumps, ground and air speed prediction
+	CCharacter *character = GameServer()->GetPlayerChar(m_Owner);
+	if (!character) return;
+	character->SetJumping(false);
+
+	CTuningParams TuningParams;
+	CTuningParams oldTuning = GameServer()->TuningCopy();
+
+	TuningParams.Set("ground_control_speed", 0);
+	TuningParams.Set("ground_jump_impulse", 0);
+	TuningParams.Set("air_control_speed", 0);
+	TuningParams.Set("air_jump_impulse", 0);
+
+	GameServer()->SetTuning(TuningParams);
+	GameServer()->SendTuningParams(m_Owner);
+	GameServer()->SetTuning(oldTuning);
 }
 
 void CMario::Destroy()
@@ -69,7 +86,13 @@ void CMario::Destroy()
 	}
 	m_MarkedForDestroy = true;
 	if (GameServer()->m_apPlayers[m_Owner])
-		GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_NONE, true);
+	{
+		GameServer()->SendTuningParams(m_Owner);
+		//GameServer()->m_apPlayers[m_Owner]->Pause(CPlayer::PAUSE_NONE, true);
+
+		CCharacter *character = GameServer()->GetPlayerChar(m_Owner);
+		if (character) character->SetJumping(true);
+	}
 }
 
 void CMario::Reset()

@@ -2351,3 +2351,21 @@ void CCharacter::SwapClients(int Client1, int Client2)
 {
 	m_Core.SetHookedPlayer(m_Core.m_HookedPlayer == Client1 ? Client2 : m_Core.m_HookedPlayer == Client2 ? Client1 : m_Core.m_HookedPlayer);
 }
+
+void CCharacter::SetJumping(bool on)
+{
+	int NewJumps = (on) ? 2 : 0;
+
+	if(NewJumps == 0 && !m_Core.m_EndlessJump)
+	{
+		m_NeededFaketuning |= FAKETUNE_NOJUMP;
+		GameServer()->SendTuningParams(m_pPlayer->GetCID(), m_TuneZone); // update tunings
+	}
+	else if(m_Core.m_Jumps == 0)
+	{
+		m_NeededFaketuning &= ~FAKETUNE_NOJUMP;
+		GameServer()->SendTuningParams(m_pPlayer->GetCID(), m_TuneZone); // update tunings
+	}
+
+	m_Core.m_Jumps = NewJumps;
+}
