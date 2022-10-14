@@ -66,6 +66,7 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 	TuningParams.Set("ground_jump_impulse", 0);
 	TuningParams.Set("air_control_speed", 0);
 	TuningParams.Set("air_jump_impulse", 0);
+	TuningParams.Set("gravity", 0);
 
 	GameServer()->SetTuning(TuningParams);
 	GameServer()->SendTuningParams(m_Owner);
