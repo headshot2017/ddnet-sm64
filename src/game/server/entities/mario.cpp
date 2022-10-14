@@ -152,34 +152,69 @@ void CMario::Snap(int SnappingClient)
 		Server()->SnapFreeID(id);
 	vertexIDs.clear();
 
-	/*
-	quickhull::QuickHull<float> qh; // Could be double as well
-	std::vector<quickhull::Vector3<float>> pointCloud;
-	for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
-		pointCloud.push_back(quickhull::Vector3<float>(geometry.position[i*3+0], geometry.position[i*3+1], geometry.position[i*3+2]));
-	auto hull = qh.getConvexHull(pointCloud, true, false);
-	const auto& indexBuffer = hull.getIndexBuffer();
-	const auto& vertexBuffer = hull.getVertexBuffer();
-	*/
+	// QuickHull
+	std::vector<size_t> indexBuffer;
+	quickhull::VertexDataSource<float> vertexBuffer;
 
-	/*
-	std::vector<Coordinate> polygonPoints;
-	for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
-		polygonPoints.push_back({geometry.position[i*3+0], geometry.position[i*3+1]});
+	// ConvexHull
+	std::vector<Coordinate> convexHull;
 
-	Polygon polygon(polygonPoints);
-	std::vector<Coordinate> convexHull = polygon.ComputeConvexHull();
-	*/
+	size_t end = 3 * geometry.numTrianglesUsed;
 
-	for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
-	//for (size_t i=0; i<indexBuffer.size()-1; i++)
-	//for (size_t i=0; i<convexHull.size()-1; i++)
+	switch(g_Config.m_MarioDrawMode)
 	{
-		//if (geometry.position[i*3+2] < 0) continue; // Z coordinate
-		ivec2 vertex((int)geometry.position[i*3+0]*m_Scale, -(int)geometry.position[i*3+1]*m_Scale + 8);
-		//dbg_msg("a", "%d %d\n", i, convexHull.size()-1);
-		//ivec2 vertex((int)convexHull[i].GetX()/MARIO_SCALE, -(int)convexHull[i].GetY()/MARIO_SCALE);
-		//ivec2 vertexTo((int)convexHull[i+1].GetX()/MARIO_SCALE, -(int)convexHull[i+1].GetY()/MARIO_SCALE);
+		case 1:
+			{
+				quickhull::QuickHull<float> qh; // Could be double as well
+				std::vector<quickhull::Vector3<float> > pointCloud;
+
+				for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
+					pointCloud.push_back(quickhull::Vector3<float>(geometry.position[i*3+0], geometry.position[i*3+1], geometry.position[i*3+2]));
+
+				quickhull::ConvexHull<float> hull = qh.getConvexHull(pointCloud, true, false);
+				indexBuffer = hull.getIndexBuffer();
+				vertexBuffer = hull.getVertexBuffer();
+				end = (indexBuffer.empty()) ? 0 : indexBuffer.size()-1;
+			}
+			break;
+
+		case 2:
+			{
+				std::vector<Coordinate> polygonPoints;
+
+				for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
+					polygonPoints.push_back({geometry.position[i*3+0], geometry.position[i*3+1]});
+
+				Polygon polygon(polygonPoints);
+				convexHull = polygon.ComputeConvexHull();
+				end = convexHull.size()-1;
+			}
+			break;
+	}
+
+	for (size_t i=0; i<end; i++)
+	{
+		ivec2 vertex, vertexTo;
+		switch(g_Config.m_MarioDrawMode)
+		{
+			case 0:
+				vertex = ivec2((int)geometry.position[i*3+0]*m_Scale, -(int)geometry.position[i*3+1]*m_Scale);
+				vertexTo = vertex;
+				break;
+
+			case 1:
+				vertex = ivec2((int)vertexBuffer[indexBuffer[i]].x*m_Scale, -(int)vertexBuffer[indexBuffer[i]].y*m_Scale);
+				vertexTo = ivec2((int)vertexBuffer[indexBuffer[i+1]].x*m_Scale, -(int)vertexBuffer[indexBuffer[i+1]].y*m_Scale);
+				break;
+
+			case 2:
+				vertex = ivec2((int)convexHull[i].GetX()*m_Scale, -(int)convexHull[i].GetY()*m_Scale);
+				vertexTo = ivec2((int)convexHull[i+1].GetX()*m_Scale, -(int)convexHull[i+1].GetY()*m_Scale);
+				break;
+		}
+		vertex.y += 8;
+		vertexTo.y += 8;
+
 		bool repeated = false;
 
 		for (size_t j=0; j<verticesSnapped.size(); j++)
