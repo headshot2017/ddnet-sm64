@@ -348,7 +348,7 @@ void CMario::loadNewBlocks(int x, int y)
 	int yadd = 0;
 
 	int arrayInd = 0;
-	for (int xadd=-3; xadd<=3; xadd++)
+	for (int xadd=-7; xadd<=7; xadd++)
 	{
 		// get block at floor
 		for (yadd=0; y+yadd<=GameServer()->Collision()->GetHeight(); yadd++)

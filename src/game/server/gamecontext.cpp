@@ -3546,13 +3546,13 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	int spawnX = width;
 	int spawnY = (Collision()->GetHeight()+205) * 32 / (-g_Config.m_MarioScale/100.f);
 	
-	surfaces[surfaceCount-2].vertices[0][0] = spawnX + width;	surfaces[surfaceCount-2].vertices[0][1] = spawnY;	surfaces[surfaceCount-2].vertices[0][2] = +128;
-	surfaces[surfaceCount-2].vertices[1][0] = spawnX - width;	surfaces[surfaceCount-2].vertices[1][1] = spawnY;	surfaces[surfaceCount-2].vertices[1][2] = -128;
-	surfaces[surfaceCount-2].vertices[2][0] = spawnX - width;	surfaces[surfaceCount-2].vertices[2][1] = spawnY;	surfaces[surfaceCount-2].vertices[2][2] = +128;
+	surfaces[surfaceCount-2].vertices[0][0] = spawnX + width + (205*32);	surfaces[surfaceCount-2].vertices[0][1] = spawnY;	surfaces[surfaceCount-2].vertices[0][2] = +128;
+	surfaces[surfaceCount-2].vertices[1][0] = spawnX - width - (205*32);	surfaces[surfaceCount-2].vertices[1][1] = spawnY;	surfaces[surfaceCount-2].vertices[1][2] = -128;
+	surfaces[surfaceCount-2].vertices[2][0] = spawnX - width - (205*32);	surfaces[surfaceCount-2].vertices[2][1] = spawnY;	surfaces[surfaceCount-2].vertices[2][2] = +128;
 
-	surfaces[surfaceCount-1].vertices[0][0] = spawnX - width;	surfaces[surfaceCount-1].vertices[0][1] = spawnY;	surfaces[surfaceCount-1].vertices[0][2] = -128;
-	surfaces[surfaceCount-1].vertices[1][0] = spawnX + width;	surfaces[surfaceCount-1].vertices[1][1] = spawnY;	surfaces[surfaceCount-1].vertices[1][2] = +128;
-	surfaces[surfaceCount-1].vertices[2][0] = spawnX + width;	surfaces[surfaceCount-1].vertices[2][1] = spawnY;	surfaces[surfaceCount-1].vertices[2][2] = -128;
+	surfaces[surfaceCount-1].vertices[0][0] = spawnX - width - (205*32);	surfaces[surfaceCount-1].vertices[0][1] = spawnY;	surfaces[surfaceCount-1].vertices[0][2] = -128;
+	surfaces[surfaceCount-1].vertices[1][0] = spawnX + width + (205*32);	surfaces[surfaceCount-1].vertices[1][1] = spawnY;	surfaces[surfaceCount-1].vertices[1][2] = +128;
+	surfaces[surfaceCount-1].vertices[2][0] = spawnX + width + (205*32);	surfaces[surfaceCount-1].vertices[2][1] = spawnY;	surfaces[surfaceCount-1].vertices[2][2] = -128;
 
 	sm64_static_surfaces_load(surfaces, surfaceCount);
 
