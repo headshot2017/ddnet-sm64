@@ -147,6 +147,8 @@ void CMario::Snap(int SnappingClient)
 	if (!GameServer()->m_apPlayers[m_Owner] || !GameServer()->GetPlayerChar(m_Owner)) return;
 	if (NetworkClipped(SnappingClient, m_Pos)) return;
 
+	float drawScale = g_Config.m_MarioDrawScale / 100.f;
+
 	std::vector<ivec2> verticesSnapped;
 	for (int id : vertexIDs)
 		Server()->SnapFreeID(id);
@@ -198,20 +200,26 @@ void CMario::Snap(int SnappingClient)
 		switch(g_Config.m_MarioDrawMode)
 		{
 			case 0:
-				vertex = ivec2((int)geometry.position[i*3+0]*m_Scale, -(int)geometry.position[i*3+1]*m_Scale);
+				vertex = ivec2((int)geometry.position[i*3+0], -(int)geometry.position[i*3+1]);
 				vertexTo = vertex;
 				break;
 
 			case 1:
-				vertex = ivec2((int)vertexBuffer[indexBuffer[i]].x*m_Scale, -(int)vertexBuffer[indexBuffer[i]].y*m_Scale);
-				vertexTo = ivec2((int)vertexBuffer[indexBuffer[i+1]].x*m_Scale, -(int)vertexBuffer[indexBuffer[i+1]].y*m_Scale);
+				vertex = ivec2((int)vertexBuffer[indexBuffer[i]].x, -(int)vertexBuffer[indexBuffer[i]].y);
+				vertexTo = ivec2((int)vertexBuffer[indexBuffer[i+1]].x, -(int)vertexBuffer[indexBuffer[i+1]].y);
 				break;
 
 			case 2:
-				vertex = ivec2((int)convexHull[i].GetX()*m_Scale, -(int)convexHull[i].GetY()*m_Scale);
-				vertexTo = ivec2((int)convexHull[i+1].GetX()*m_Scale, -(int)convexHull[i+1].GetY()*m_Scale);
+				vertex = ivec2((int)convexHull[i].GetX(), -(int)convexHull[i].GetY());
+				vertexTo = ivec2((int)convexHull[i+1].GetX(), -(int)convexHull[i+1].GetY());
 				break;
 		}
+
+		vertex.x = ((vertex.x * m_Scale) - m_Pos.x) * drawScale + m_Pos.x;
+		vertex.y = ((vertex.y * m_Scale) - m_Pos.y) * drawScale + m_Pos.y;
+		vertexTo.x = ((vertexTo.x * m_Scale) - m_Pos.x) * drawScale + m_Pos.x;
+		vertexTo.y = ((vertexTo.y * m_Scale) - m_Pos.y) * drawScale + m_Pos.y;
+
 		vertex.y += 8;
 		vertexTo.y += 8;
 
