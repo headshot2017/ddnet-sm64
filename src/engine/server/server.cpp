@@ -2641,6 +2641,7 @@ int CServer::Run()
 		romBuffer[romFileLength] = 0;
 		fclose(f);
 
+		/* SHA1 crashes on linux due to libcrypto conflict... commenting this out for now
 		// perform SHA-1 check to make sure it's the correct ROM
 		char hashResult[21];
 		char hashHexResult[41];
@@ -2663,7 +2664,7 @@ int CServer::Run()
 			free(romBuffer);
 			dbg_msg("libsm64", "%s", msg);
 		}
-		else
+		else */
 		{
 			// Mario texture is 704x64 RGBA (it won't be used)
 			uint8_t *texture = (uint8_t*)malloc(4 * SM64_TEXTURE_WIDTH * SM64_TEXTURE_HEIGHT);
