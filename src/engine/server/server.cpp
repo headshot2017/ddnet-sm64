@@ -45,7 +45,6 @@
 
 // SM64
 extern "C" {
-	#include <sha1/sha1.h>
 	#include <libsm64.h>
 }
 
