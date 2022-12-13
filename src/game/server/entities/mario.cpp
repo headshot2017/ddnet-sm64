@@ -1,9 +1,5 @@
 #include "mario.h"
 #include "character.h"
-extern "C" {
-	#include <decomp/include/sm64shared.h>
-	#include <decomp/include/surface_terrains.h>
-}
 
 #include <stdlib.h>
 #include <string.h>
@@ -20,30 +16,10 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 {
 	GameWorld()->InsertEntity(this);
 	m_Owner = owner;
-	m_Scale = g_Config.m_MarioScale/100.f;
+	m_Core.Init(&GameServer()->m_World.m_Core, Collision(), Pos, g_Config.m_MarioScale/100.f);
+	GameServer()->m_World.m_Core.m_apMarios[owner] = &m_Core;
 
-	// on teeworlds, up coordinate is Y-, SM64 is Y+. flip the Y coordinate
-	// scale conversions:
-	//    teeworlds -> sm64: divide
-	//    sm64 -> teeworlds: multiply
-	int spawnX = Pos.x/m_Scale;
-	int spawnY = -Pos.y/m_Scale;
-
-	geometry.position = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
-	geometry.normal   = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
-	geometry.color    = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
-	geometry.uv       = (float*)malloc( sizeof(float) * 6 * SM64_GEO_MAX_TRIANGLES );
-	geometry.numTrianglesUsed = 0;
-	memset(&input, 0, sizeof(SM64MarioInputs));
-	memset(&state, 0, sizeof(SM64MarioState));
-
-	//exportMap(spawnX, spawnY);
-
-	memset(m_currSurfaces, -1, sizeof(uint32_t) * MAX_SURFACES);
-	loadNewBlocks(Pos.x/32, -Pos.y/32);
-
-	marioId = sm64_mario_create(spawnX, spawnY, 0, 0,0,0,0);
-	if (marioId == -1)
+	if (!m_Core.Spawned())
 	{
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "libsm64", "Failed to spawn Mario");
 		GameServer()->SendChatTarget(owner, "Failed to spawn Mario");
@@ -75,16 +51,7 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 
 void CMario::Destroy()
 {
-	if (marioId != -1)
-	{
-		free(geometry.position);
-		free(geometry.normal);
-		free(geometry.color);
-		free(geometry.uv);
-		deleteBlocks();
-		sm64_mario_delete(marioId);
-		marioId = -1;
-	}
+	m_Core.Destroy();
 	m_MarkedForDestroy = true;
 	if (GameServer()->m_apPlayers[m_Owner])
 	{
@@ -103,7 +70,7 @@ void CMario::Reset()
 
 void CMario::Tick()
 {
-	if (marioId == -1) return;
+	if (!m_Core.Spawned()) return;
 
 	CPlayer *player = GameServer()->m_apPlayers[m_Owner];
 	CCharacter *character = GameServer()->GetPlayerChar(m_Owner);
@@ -114,27 +81,15 @@ void CMario::Tick()
 	}
 
 	player->m_SpectatorID = m_Owner;
-	input.stickX = -character->GetLatestInput()->m_Direction;
-	input.buttonA = character->GetLatestInput()->m_Jump;
-	input.buttonB = character->GetLatestInput()->m_Fire & 1;
-	input.buttonZ = character->GetLatestInput()->m_Hook;
+	m_Core.input.stickX = -character->GetLatestInput()->m_Direction;
+	m_Core.input.buttonA = character->GetLatestInput()->m_Jump;
+	m_Core.input.buttonB = character->GetLatestInput()->m_Fire & 1;
+	m_Core.input.buttonZ = character->GetLatestInput()->m_Hook;
 
-	m_Tick += 1.f/Server()->TickSpeed();
-	while (m_Tick >= 1.f/30)
-	{
-		m_Tick -= 1.f/30;
+	m_Core.Tick(1.f/Server()->TickSpeed());
 
-		sm64_reset_mario_z(marioId);
-		sm64_mario_tick(marioId, &input, &state, &geometry);
-
-		vec2 newPos(state.position[0]*m_Scale, -state.position[1]*m_Scale);
-		if ((int)(newPos.x/32) != (int)(m_Pos.x/32) || (int)(newPos.y/32) != (int)(m_Pos.y/32))
-			loadNewBlocks(newPos.x/32, newPos.y/32);
-
-		m_Pos = newPos;
-
-		player->m_ViewPos = vec2(m_Pos.x, m_Pos.y-48);
-	}
+	m_Pos = m_Core.m_Pos;
+	player->m_ViewPos = vec2(m_Pos.x, m_Pos.y-48);
 
 	character->Core()->m_Pos = character->m_Pos = m_Pos;
 	character->Core()->m_Vel = vec2(0,0);
@@ -143,7 +98,7 @@ void CMario::Tick()
 
 void CMario::Snap(int SnappingClient)
 {
-	if (marioId == -1) return;
+	if (!m_Core.Spawned()) return;
 	if (!GameServer()->m_apPlayers[m_Owner] || !GameServer()->GetPlayerChar(m_Owner)) return;
 	if (NetworkClipped(SnappingClient, m_Pos)) return;
 
@@ -161,7 +116,7 @@ void CMario::Snap(int SnappingClient)
 	// ConvexHull
 	std::vector<Coordinate> convexHull;
 
-	size_t end = 3 * geometry.numTrianglesUsed;
+	size_t end = 3 * m_Core.geometry.numTrianglesUsed;
 
 	switch(g_Config.m_MarioDrawMode)
 	{
@@ -170,8 +125,8 @@ void CMario::Snap(int SnappingClient)
 				quickhull::QuickHull<float> qh; // Could be double as well
 				std::vector<quickhull::Vector3<float> > pointCloud;
 
-				for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
-					pointCloud.push_back(quickhull::Vector3<float>(geometry.position[i*3+0], geometry.position[i*3+1], geometry.position[i*3+2]));
+				for (int i=0; i<3 * m_Core.geometry.numTrianglesUsed; i++)
+					pointCloud.push_back(quickhull::Vector3<float>(m_Core.geometry.position[i*3+0], m_Core.geometry.position[i*3+1], m_Core.geometry.position[i*3+2]));
 
 				quickhull::ConvexHull<float> hull = qh.getConvexHull(pointCloud, true, false);
 				indexBuffer = hull.getIndexBuffer();
@@ -184,8 +139,8 @@ void CMario::Snap(int SnappingClient)
 			{
 				std::vector<Coordinate> polygonPoints;
 
-				for (int i=0; i<3 * geometry.numTrianglesUsed; i++)
-					polygonPoints.push_back({geometry.position[i*3+0], geometry.position[i*3+1]});
+				for (int i=0; i<3 * m_Core.geometry.numTrianglesUsed; i++)
+					polygonPoints.push_back({m_Core.geometry.position[i*3+0], m_Core.geometry.position[i*3+1]});
 
 				Polygon polygon(polygonPoints);
 				convexHull = polygon.ComputeConvexHull();
@@ -200,7 +155,7 @@ void CMario::Snap(int SnappingClient)
 		switch(g_Config.m_MarioDrawMode)
 		{
 			case 0:
-				vertex = ivec2((int)geometry.position[i*3+0], -(int)geometry.position[i*3+1]);
+				vertex = ivec2((int)m_Core.geometry.position[i*3+0], -(int)m_Core.geometry.position[i*3+1]);
 				vertexTo = vertex;
 				break;
 
@@ -215,10 +170,10 @@ void CMario::Snap(int SnappingClient)
 				break;
 		}
 
-		vertex.x = ((vertex.x * m_Scale) - m_Pos.x) * drawScale + m_Pos.x;
-		vertex.y = ((vertex.y * m_Scale) - m_Pos.y) * drawScale + m_Pos.y;
-		vertexTo.x = ((vertexTo.x * m_Scale) - m_Pos.x) * drawScale + m_Pos.x;
-		vertexTo.y = ((vertexTo.y * m_Scale) - m_Pos.y) * drawScale + m_Pos.y;
+		vertex.x = ((vertex.x * m_Core.Scale()) - m_Pos.x) * drawScale + m_Pos.x;
+		vertex.y = ((vertex.y * m_Core.Scale()) - m_Pos.y) * drawScale + m_Pos.y;
+		vertexTo.x = ((vertexTo.x * m_Core.Scale()) - m_Pos.x) * drawScale + m_Pos.x;
+		vertexTo.y = ((vertexTo.y * m_Core.Scale()) - m_Pos.y) * drawScale + m_Pos.y;
 
 		vertex.y += 8;
 		vertexTo.y += 8;
@@ -249,282 +204,4 @@ void CMario::Snap(int SnappingClient)
 		pObj->m_Y = vertex.y;
 		pObj->m_StartTick = Server()->Tick() + Server()->TickSpeed();
 	}
-}
-
-void CMario::deleteBlocks()
-{
-	for (int j=0; j<MAX_SURFACES; j++)
-	{
-		if (m_currSurfaces[j] == (uint32_t)(-1)) continue;
-		sm64_surface_object_delete(m_currSurfaces[j]);
-		m_currSurfaces[j] = -1;
-	}
-}
-
-bool CMario::addBlock(int x, int y, int *i)
-{
-	if ((*i) >= MAX_SURFACES) return false;
-	bool block = GameServer()->Collision()->CheckPoint(x*32, y*32);
-	if (!block) return false;
-
-	struct SM64SurfaceObject obj;
-	memset(&obj.transform, 0, sizeof(struct SM64ObjectTransform));
-	obj.transform.position[0] = x*32 / m_Scale;
-	obj.transform.position[1] = (-y*32-16) / m_Scale;
-	obj.transform.position[2] = 0;
-	obj.surfaceCount = 0;
-	obj.surfaces = (struct SM64Surface*)malloc(sizeof(struct SM64Surface) * 4*2);
-
-	bool up =		GameServer()->Collision()->CheckPoint(x*32, y*32-32);
-	bool down =		GameServer()->Collision()->CheckPoint(x*32, y*32+32);
-	bool left =		GameServer()->Collision()->CheckPoint(x*32-32, y*32);
-	bool right =	GameServer()->Collision()->CheckPoint(x*32+32, y*32);
-
-	// block ground face
-	if (!up)
-	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 / m_Scale;
-
-		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 0 / m_Scale; 		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 / m_Scale;
-
-		obj.surfaceCount += 2;
-	}
-
-	// left (Z+)
-	if (!left)
-	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 0 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 0 / m_Scale;
-
-		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 0 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 0 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 0 / m_Scale;
-
-		obj.surfaceCount += 2;
-	}
-
-	// right (Z-)
-	if (!right)
-	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 32 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 32 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 32 / m_Scale;
-
-		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 32 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 / m_Scale;	obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 32 / m_Scale;
-
-		obj.surfaceCount += 2;
-	}
-
-	// block bottom face
-	if (!down)
-	{
-		obj.surfaces[obj.surfaceCount+0].vertices[0][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[0][2] = 64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[1][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[1][2] = -64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+0].vertices[2][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+0].vertices[2][2] = 64 / m_Scale;
-
-		obj.surfaces[obj.surfaceCount+1].vertices[0][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[0][2] = -64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[1][0] = 32 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[1][2] = 64 / m_Scale;
-		obj.surfaces[obj.surfaceCount+1].vertices[2][0] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][1] = 0 / m_Scale;		obj.surfaces[obj.surfaceCount+1].vertices[2][2] = -64 / m_Scale;
-
-		obj.surfaceCount += 2;
-	}
-
-	for (uint32_t ind=0; ind<obj.surfaceCount; ind++)
-	{
-		obj.surfaces[ind].type = SURFACE_DEFAULT;
-		obj.surfaces[ind].force = 0;
-		obj.surfaces[ind].terrain = TERRAIN_STONE;
-	}
-
-	if (obj.surfaceCount)
-		m_currSurfaces[(*i)++] = sm64_surface_object_create(&obj);
-
-	free(obj.surfaces);
-	return true;
-}
-
-void CMario::loadNewBlocks(int x, int y)
-{
-	deleteBlocks();
-	int yadd = 0;
-
-	int arrayInd = 0;
-	for (int xadd=-7; xadd<=7; xadd++)
-	{
-		// get block at floor
-		for (yadd=0; y+yadd<=GameServer()->Collision()->GetHeight(); yadd++)
-		{
-			if (addBlock(x+xadd, y+yadd, &arrayInd)) break;
-		}
-
-		for (yadd=6; yadd>=0; yadd--)
-		{
-			addBlock(x+xadd, y-yadd, &arrayInd);
-		}
-	}
-}
-
-void CMario::exportMap(int spawnX, int spawnY)
-{
-	FILE *f = fopen("level.c", "w");
-
-	fprintf(f, "#include \"level.h\"\n#include \"../src/decomp/include/surface_terrains.h\"\nconst struct SM64Surface surfaces[] = {\n");
-
-	for (int y=0; y<GameServer()->Collision()->GetHeight(); y++)
-	{
-		for (int x=0; x<GameServer()->Collision()->GetWidth(); x++)
-		{
-			bool block = GameServer()->Collision()->CheckPoint(x*32, y*32);
-			if (!block) continue;
-
-			vec3 pos(x*32 / m_Scale, (-y*32-16) / m_Scale, 0);
-
-			bool up =		GameServer()->Collision()->CheckPoint(x*32, y*32-32);
-			bool down =		GameServer()->Collision()->CheckPoint(x*32, y*32+32);
-			bool left =		GameServer()->Collision()->CheckPoint(x*32-32, y*32);
-			bool right =	GameServer()->Collision()->CheckPoint(x*32+32, y*32);
-
-			int vertices1[3][3], vertices2[3][3];
-
-			// block ground face
-			if (!up)
-			{
-				vertices1[0][0] = pos.x + (32 / m_Scale);	vertices1[0][1] = pos.y + (32 / m_Scale);	vertices1[0][2] = pos.z + (64 / m_Scale);
-				vertices1[1][0] = pos.x + (0 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][2] = pos.z + (-64 / m_Scale);
-				vertices1[2][0] = pos.x + (0 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][2] = pos.z + (64 / m_Scale);
-
-				vertices2[0][0] = pos.x + (0 / m_Scale); 	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][2] = pos.z + (-64 / m_Scale);
-				vertices2[1][0] = pos.x + (32 / m_Scale);	vertices2[1][1] = pos.y + (32 / m_Scale);	vertices2[1][2] = pos.z + (64 / m_Scale);
-				vertices2[2][0] = pos.x + (32 / m_Scale);	vertices2[2][1] = pos.y + (32 / m_Scale);	vertices2[2][2] = pos.z + (-64 / m_Scale);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices1[0][0], vertices1[0][1], vertices1[0][2],
-					vertices1[1][0], vertices1[1][1], vertices1[1][2],
-					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices2[0][0], vertices2[0][1], vertices2[0][2],
-					vertices2[1][0], vertices2[1][1], vertices2[1][2],
-					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
-			}
-
-			// left (X-)
-			if (!left)
-			{
-				vertices1[0][2] = pos.z + (-64 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][0] = pos.x + (0 / m_Scale);
-				vertices1[1][2] = pos.z + (64 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][0] = pos.x + (0 / m_Scale);
-				vertices1[2][2] = pos.z + (-64 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][0] = pos.x + (0 / m_Scale);
-
-				vertices2[0][2] = pos.z + (64 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][0] = pos.x + (0 / m_Scale);
-				vertices2[1][2] = pos.z + (-64 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][0] = pos.x + (0 / m_Scale);
-				vertices2[2][2] = pos.z + (64 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][0] = pos.x + (0 / m_Scale);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices1[0][0], vertices1[0][1], vertices1[0][2],
-					vertices1[1][0], vertices1[1][1], vertices1[1][2],
-					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices2[0][0], vertices2[0][1], vertices2[0][2],
-					vertices2[1][0], vertices2[1][1], vertices2[1][2],
-					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
-			}
-
-			// right (X+)
-			if (!right)
-			{
-				vertices1[0][2] = pos.z + (64 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][0] = pos.x + (32 / m_Scale);
-				vertices1[1][2] = pos.z + (-64 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][0] = pos.x + (32 / m_Scale);
-				vertices1[2][2] = pos.z + (64 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][0] = pos.x + (32 / m_Scale);
-
-				vertices2[0][2] = pos.z + (-64 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][0] = pos.x + (32 / m_Scale);
-				vertices2[1][2] = pos.z + (64 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][0] = pos.x + (32 / m_Scale);
-				vertices2[2][2] = pos.z + (-64 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][0] = pos.x + (32 / m_Scale);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices1[0][0], vertices1[0][1], vertices1[0][2],
-					vertices1[1][0], vertices1[1][1], vertices1[1][2],
-					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices2[0][0], vertices2[0][1], vertices2[0][2],
-					vertices2[1][0], vertices2[1][1], vertices2[1][2],
-					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
-			}
-
-			// front
-			{
-				vertices1[0][0] = pos.x + (32 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][2] = pos.z + (-64 / m_Scale);
-				vertices1[1][0] = pos.x + (0 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][2] = pos.z + (-64 / m_Scale);
-				vertices1[2][0] = pos.x + (32 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][2] = pos.z + (-64 / m_Scale);
-
-				vertices2[0][0] = pos.x + (0 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][2] = pos.z + (-64 / m_Scale);
-				vertices2[1][0] = pos.x + (32 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][2] = pos.z + (-64 / m_Scale);
-				vertices2[2][0] = pos.x + (0 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][2] = pos.z + (-64 / m_Scale);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices1[0][0], vertices1[0][1], vertices1[0][2],
-					vertices1[1][0], vertices1[1][1], vertices1[1][2],
-					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices2[0][0], vertices2[0][1], vertices2[0][2],
-					vertices2[1][0], vertices2[1][1], vertices2[1][2],
-					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
-			}
-
-			// back
-			{
-				vertices1[0][0] = pos.x + (0 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][2] = pos.z + (64 / m_Scale);
-				vertices1[1][0] = pos.x + (32 / m_Scale);	vertices1[1][1] = pos.y + (32 / m_Scale);	vertices1[1][2] = pos.z + (64 / m_Scale);
-				vertices1[2][0] = pos.x + (0 / m_Scale);	vertices1[2][1] = pos.y + (32 / m_Scale);	vertices1[2][2] = pos.z + (64 / m_Scale);
-
-				vertices2[0][0] = pos.x + (32 / m_Scale);	vertices2[0][1] = pos.y + (32 / m_Scale);	vertices2[0][2] = pos.z + (64 / m_Scale);
-				vertices2[1][0] = pos.x + (0 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][2] = pos.z + (64 / m_Scale);
-				vertices2[2][0] = pos.x + (32 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][2] = pos.z + (64 / m_Scale);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices1[0][0], vertices1[0][1], vertices1[0][2],
-					vertices1[1][0], vertices1[1][1], vertices1[1][2],
-					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices2[0][0], vertices2[0][1], vertices2[0][2],
-					vertices2[1][0], vertices2[1][1], vertices2[1][2],
-					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
-			}
-
-			// block bottom face
-			if (!down)
-			{
-				vertices1[0][0] = pos.x + (0 / m_Scale);	vertices1[0][1] = pos.y + (0 / m_Scale);	vertices1[0][2] = pos.z + (64 / m_Scale);
-				vertices1[1][0] = pos.x + (0 / m_Scale);	vertices1[1][1] = pos.y + (0 / m_Scale);	vertices1[1][2] = pos.z + (-64 / m_Scale);
-				vertices1[2][0] = pos.x + (32 / m_Scale);	vertices1[2][1] = pos.y + (0 / m_Scale);	vertices1[2][2] = pos.z + (64 / m_Scale);
-
-				vertices2[0][0] = pos.x + (32 / m_Scale);	vertices2[0][1] = pos.y + (0 / m_Scale);	vertices2[0][2] = pos.z + (-64 / m_Scale);
-				vertices2[1][0] = pos.x + (32 / m_Scale);	vertices2[1][1] = pos.y + (0 / m_Scale);	vertices2[1][2] = pos.z + (64 / m_Scale);
-				vertices2[2][0] = pos.x + (0 / m_Scale);	vertices2[2][1] = pos.y + (0 / m_Scale);	vertices2[2][2] = pos.z + (-64 / m_Scale);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices1[0][0], vertices1[0][1], vertices1[0][2],
-					vertices1[1][0], vertices1[1][1], vertices1[1][2],
-					vertices1[2][0], vertices1[2][1], vertices1[2][2]);
-
-				fprintf(f, "{SURFACE_DEFAULT,0,TERRAIN_STONE,{{%d,%d,%d},{%d,%d,%d},{%d,%d,%d}}},\n",
-					vertices2[0][0], vertices2[0][1], vertices2[0][2],
-					vertices2[1][0], vertices2[1][1], vertices2[1][2],
-					vertices2[2][0], vertices2[2][1], vertices2[2][2]);
-			}
-		}
-	}
-
-	fprintf(f, "};\nconst size_t surfaces_count = sizeof( surfaces ) / sizeof( surfaces[0] );\nconst int32_t spawn[3] = {%d, %d, 0};\n", spawnX, spawnY);
-	fclose(f);
 }

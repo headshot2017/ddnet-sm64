@@ -195,6 +195,7 @@ public:
 	CWorldCore()
 	{
 		mem_zero(m_apCharacters, sizeof(m_apCharacters));
+		mem_zero(m_apMarios, sizeof(m_apMarios));
 		m_pPrng = nullptr;
 	}
 
@@ -212,6 +213,7 @@ public:
 
 	CTuningParams m_aTuning[2];
 	class CCharacterCore *m_apCharacters[MAX_CLIENTS];
+	class CMarioCore *m_apMarios[MAX_CLIENTS];
 	CPrng *m_pPrng;
 
 	void InitSwitchers(int HighestSwitchNumber);

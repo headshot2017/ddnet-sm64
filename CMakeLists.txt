@@ -1844,6 +1844,8 @@ set_src(GAME_SHARED GLOB src/game
   mapitems_ex.cpp
   mapitems_ex.h
   mapitems_ex_types.h
+  mariocore.cpp
+  mariocore.h
   prng.cpp
   prng.h
   teamscore.cpp
@@ -1853,6 +1855,7 @@ set_src(GAME_SHARED GLOB src/game
   version.h
   voting.h
 )
+
 # A bit hacky, but these are needed to register all the UUIDs, even for stuff
 # that doesn't link game.
 set(ENGINE_UUID_SHARED
@@ -1892,6 +1895,10 @@ set(LIBS
   # on it.
   ${CMAKE_THREAD_LIBS_INIT}
 )
+
+# SM64
+add_subdirectory(libsm64)
+include_directories("libsm64/src")
 
 # Targets
 add_library(engine-gfx EXCLUDE_FROM_ALL OBJECT ${ENGINE_GFX})
@@ -2386,8 +2393,6 @@ if(SERVER)
     # on it.
     ${CMAKE_THREAD_LIBS_INIT}
   )
-
-  add_subdirectory(libsm64)
 
   # Target
   set(TARGET_SERVER ${SERVER_EXECUTABLE})

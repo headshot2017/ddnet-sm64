@@ -37,6 +37,7 @@ file(GLOB MARIO_SOURCES src/decomp/mario/*.c)
 
 add_library(sm64 SHARED ${SOURCES} ${MARIO_SOURCES})
 
+include_directories(src)
 include_directories(src/decomp/include)
 include_directories(src/decomp/mario)
 
