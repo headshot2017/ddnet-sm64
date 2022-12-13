@@ -52,6 +52,7 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 void CMario::Destroy()
 {
 	m_Core.Destroy();
+	GameServer()->m_World.m_Core.m_apMarios[m_Owner] = 0;
 	m_MarkedForDestroy = true;
 	if (GameServer()->m_apPlayers[m_Owner])
 	{
