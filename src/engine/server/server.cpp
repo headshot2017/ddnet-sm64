@@ -6,6 +6,7 @@
 #include <base/logger.h>
 #include <base/math.h>
 #include <base/system.h>
+#include <base/hash_ctxt.h>
 
 #include <engine/config.h>
 #include <engine/console.h>
@@ -2641,30 +2642,30 @@ int CServer::Run()
 		romBuffer[romFileLength] = 0;
 		fclose(f);
 
-		/* SHA1 crashes on linux due to libcrypto conflict... commenting this out for now
-		// perform SHA-1 check to make sure it's the correct ROM
-		char hashResult[21];
-		char hashHexResult[41];
-		SHA1(hashResult, (char*)romBuffer, romFileLength);
+		// perform MD5 check to make sure it's the correct ROM
+		MD5_CTX ctxt;
+		md5_init(&ctxt);
+		md5_update(&ctxt, romBuffer, romFileLength);
+		MD5_DIGEST result = md5_finish(&ctxt);
 
-		for( int offset = 0; offset < 20; offset++)
-			sprintf( ( hashHexResult + (2*offset)), "%02x", hashResult[offset]&0xff);
+		char hexResult[MD5_MAXSTRSIZE];
+		md5_str(result, hexResult, sizeof(hexResult));
 
-		const char *SM64_SHA1 = "9bef1128717f958171a4afac3ed78ee2bb4e86ce";
-		if (strcmp(hashHexResult, SM64_SHA1)) // mismatch
+		const char *SM64_MD5 = "20b854b239203baf6c961b850a4a51a2";
+		if (strcmp(hexResult, SM64_MD5)) // mismatch
 		{
 			char msg[256];
 			sprintf(msg,
-				"Super Mario 64 US ROM SHA-1 mismatch!\n"
+				"Super Mario 64 US ROM MD5 mismatch!\n"
 				"Expected: %s\n"
 				"Your copy: %s\n"
 				"Please provide the correct ROM",
-				SM64_SHA1, hashHexResult);
+				SM64_MD5, hexResult);
 
 			free(romBuffer);
 			dbg_msg("libsm64", "%s", msg);
 		}
-		else */
+		else
 		{
 			// Mario texture is 704x64 RGBA (it won't be used)
 			uint8_t *texture = (uint8_t*)malloc(4 * SM64_TEXTURE_WIDTH * SM64_TEXTURE_HEIGHT);
