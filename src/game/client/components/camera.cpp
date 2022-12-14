@@ -6,6 +6,7 @@
 #include <base/math.h>
 #include <game/client/gameclient.h>
 #include <game/collision.h>
+#include <game/mariocore.h>
 
 #include "camera.h"
 #include "controls.h"
@@ -163,8 +164,10 @@ void CCamera::OnRender()
 
 		if(m_pClient->m_Snap.m_SpecInfo.m_Active)
 			m_Center = m_pClient->m_Snap.m_SpecInfo.m_Position + s_aCurrentCameraOffset[g_Config.m_ClDummy];
-		else
+		else if (!m_pClient->m_GameWorld.m_Core.m_apMarios[m_pClient->m_Snap.m_LocalClientID])
 			m_Center = m_pClient->m_LocalCharacterPos + s_aCurrentCameraOffset[g_Config.m_ClDummy];
+		else
+			m_Center = m_pClient->m_GameWorld.m_Core.m_apMarios[m_pClient->m_Snap.m_LocalClientID]->m_Pos + s_aCurrentCameraOffset[g_Config.m_ClDummy];
 	}
 
 	if(m_ForceFreeviewPos != vec2(-1, -1) && m_CamType == CAMTYPE_SPEC)

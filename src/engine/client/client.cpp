@@ -4721,6 +4721,16 @@ int main(int argc, const char **argv)
 		io_close(File);
 		pConsole->ExecuteFile(CONFIG_FILE);
 	}
+	else
+	{
+		// settings_ddnet_sm64.cfg does not exist; try executing settings_ddnet.cfg
+		File = pStorage->OpenFile(CONFIG_FILE_OLD, IOFLAG_READ, IStorage::TYPE_ALL);
+		if(File)
+		{
+			io_close(File);
+			pConsole->ExecuteFile(CONFIG_FILE_OLD);
+		}
+	}
 
 	// execute autoexec file
 	File = pStorage->OpenFile(AUTOEXEC_CLIENT_FILE, IOFLAG_READ, IStorage::TYPE_ALL);

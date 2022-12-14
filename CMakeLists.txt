@@ -1894,6 +1894,7 @@ set(LIBS
   # Add pthreads (on non-Windows) at the end, so that other libraries can depend
   # on it.
   ${CMAKE_THREAD_LIBS_INIT}
+  sm64
 )
 
 # SM64
@@ -2044,6 +2045,8 @@ if(CLIENT)
     components/maplayers.h
     components/mapsounds.cpp
     components/mapsounds.h
+    components/marios.cpp
+    components/marios.h
     components/menu_background.cpp
     components/menu_background.h
     components/menus.cpp
@@ -2403,7 +2406,7 @@ if(SERVER)
     $<TARGET_OBJECTS:engine-shared>
     $<TARGET_OBJECTS:game-shared>
   )
-  target_link_libraries(${TARGET_SERVER} ${LIBS_SERVER} sm64)
+  target_link_libraries(${TARGET_SERVER} ${LIBS_SERVER})
   target_include_directories(${TARGET_SERVER} PRIVATE ${PNG_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/libsm64/src)
   list(APPEND TARGETS_OWN ${TARGET_SERVER})
   list(APPEND TARGETS_LINK ${TARGET_SERVER})

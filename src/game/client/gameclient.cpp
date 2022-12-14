@@ -26,6 +26,7 @@
 #include <base/math.h>
 #include <base/system.h>
 #include <base/vmath.h>
+#include <base/hash_ctxt.h>
 
 #include "gameclient.h"
 #include "race.h"
@@ -55,6 +56,7 @@
 #include "components/mapimages.h"
 #include "components/maplayers.h"
 #include "components/mapsounds.h"
+#include "components/marios.h"
 #include "components/menu_background.h"
 #include "components/menus.h"
 #include "components/motd.h"
@@ -122,6 +124,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Particles.m_RenderTrail,
 					      &m_Items,
 					      &m_Players,
+					      &m_Marios,
 					      &m_Ghost,
 					      &m_MapLayersForeGround,
 					      &m_Particles.m_RenderExplosions,

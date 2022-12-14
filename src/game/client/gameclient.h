@@ -39,6 +39,7 @@
 #include "components/mapimages.h"
 #include "components/maplayers.h"
 #include "components/mapsounds.h"
+#include "components/marios.h"
 #include "components/menu_background.h"
 #include "components/menus.h"
 #include "components/motd.h"
@@ -135,6 +136,7 @@ public:
 	CSpectator m_Spectator;
 
 	CPlayers m_Players;
+	CMarios m_Marios;
 	CNamePlates m_NamePlates;
 	CFreezeBars m_FreezeBars;
 	CItems m_Items;
@@ -697,6 +699,9 @@ public:
 	bool m_ExtrasSkinLoaded;
 
 	const std::vector<CSnapEntities> &SnapEntities() { return m_vSnapEntities; }
+
+	// SM64
+	uint8_t *m_MarioTexture;
 
 private:
 	std::vector<CSnapEntities> m_vSnapEntities;
