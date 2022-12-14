@@ -127,7 +127,7 @@ void CMario::Snap(int SnappingClient)
 				std::vector<quickhull::Vector3<float> > pointCloud;
 
 				for (int i=0; i<3 * m_Core.geometry.numTrianglesUsed; i++)
-					pointCloud.push_back(quickhull::Vector3<float>(m_Core.geometry.position[i*3+0], m_Core.geometry.position[i*3+1], m_Core.geometry.position[i*3+2]));
+					pointCloud.push_back(quickhull::Vector3<float>(m_Core.m_GeometryPos[i].x, m_Core.m_GeometryPos[i].y, m_Core.m_GeometryPos[i].z));
 
 				quickhull::ConvexHull<float> hull = qh.getConvexHull(pointCloud, true, false);
 				indexBuffer = hull.getIndexBuffer();
@@ -141,7 +141,7 @@ void CMario::Snap(int SnappingClient)
 				std::vector<Coordinate> polygonPoints;
 
 				for (int i=0; i<3 * m_Core.geometry.numTrianglesUsed; i++)
-					polygonPoints.push_back({m_Core.geometry.position[i*3+0], m_Core.geometry.position[i*3+1]});
+					polygonPoints.push_back({m_Core.m_GeometryPos[i].x, m_Core.m_GeometryPos[i].y});
 
 				Polygon polygon(polygonPoints);
 				convexHull = polygon.ComputeConvexHull();
@@ -156,25 +156,25 @@ void CMario::Snap(int SnappingClient)
 		switch(g_Config.m_MarioDrawMode)
 		{
 			case 0:
-				vertex = ivec2((int)m_Core.geometry.position[i*3+0], -(int)m_Core.geometry.position[i*3+1]);
+				vertex = ivec2((int)m_Core.m_GeometryPos[i].x, (int)m_Core.m_GeometryPos[i].y);
 				vertexTo = vertex;
 				break;
 
 			case 1:
-				vertex = ivec2((int)vertexBuffer[indexBuffer[i]].x, -(int)vertexBuffer[indexBuffer[i]].y);
-				vertexTo = ivec2((int)vertexBuffer[indexBuffer[i+1]].x, -(int)vertexBuffer[indexBuffer[i+1]].y);
+				vertex = ivec2((int)vertexBuffer[indexBuffer[i]].x, (int)vertexBuffer[indexBuffer[i]].y);
+				vertexTo = ivec2((int)vertexBuffer[indexBuffer[i+1]].x, (int)vertexBuffer[indexBuffer[i+1]].y);
 				break;
 
 			case 2:
-				vertex = ivec2((int)convexHull[i].GetX(), -(int)convexHull[i].GetY());
-				vertexTo = ivec2((int)convexHull[i+1].GetX(), -(int)convexHull[i+1].GetY());
+				vertex = ivec2((int)convexHull[i].GetX(), (int)convexHull[i].GetY());
+				vertexTo = ivec2((int)convexHull[i+1].GetX(), (int)convexHull[i+1].GetY());
 				break;
 		}
 
-		vertex.x = ((vertex.x * m_Core.Scale()) - m_Pos.x) * drawScale + m_Pos.x;
-		vertex.y = ((vertex.y * m_Core.Scale()) - m_Pos.y) * drawScale + m_Pos.y;
-		vertexTo.x = ((vertexTo.x * m_Core.Scale()) - m_Pos.x) * drawScale + m_Pos.x;
-		vertexTo.y = ((vertexTo.y * m_Core.Scale()) - m_Pos.y) * drawScale + m_Pos.y;
+		vertex.x = (vertex.x - m_Pos.x) * drawScale + m_Pos.x;
+		vertex.y = (vertex.y - m_Pos.y) * drawScale + m_Pos.y;
+		vertexTo.x = (vertexTo.x - m_Pos.x) * drawScale + m_Pos.x;
+		vertexTo.y = (vertexTo.y - m_Pos.y) * drawScale + m_Pos.y;
 
 		vertex.y += 8;
 		vertexTo.y += 8;

@@ -2,6 +2,8 @@
 #include <limits.h>
 #include <string.h>
 
+#include <base/math.h>
+
 #include "mariocore.h"
 #include "collision.h"
 
@@ -19,6 +21,7 @@ void CMarioCore::Init(CWorldCore *pWorld, CCollision *pCollision, vec2 spawnpos,
 	m_Scale = scale;
 	m_SpawnPos = spawnpos;
 	memset(m_currSurfaces, UINT_MAX, sizeof(m_currSurfaces));
+	memset(&input, 0, sizeof(SM64MarioInputs));
 
 	Reset();
 }
@@ -78,6 +81,9 @@ void CMarioCore::Tick(float tickspeed)
 	{
 		m_Tick -= 1.f/30;
 
+		m_LastPos = m_CurrPos;
+		mem_copy(m_LastGeometryPos, m_CurrGeometryPos, sizeof(m_CurrGeometryPos));
+
 		sm64_reset_mario_z(marioId);
 		sm64_mario_tick(marioId, &input, &state, &geometry);
 
@@ -85,8 +91,18 @@ void CMarioCore::Tick(float tickspeed)
 		if ((int)(newPos.x/32) != (int)(m_Pos.x/32) || (int)(newPos.y/32) != (int)(m_Pos.y/32))
 			loadNewBlocks(newPos.x/32, newPos.y/32);
 
-		m_Pos = newPos;
+		m_CurrPos = newPos;
+		for (int i=0; i<geometry.numTrianglesUsed*3; i++)
+		{
+			m_CurrGeometryPos[i].x = geometry.position[i*3+0]*m_Scale;
+			m_CurrGeometryPos[i].y = geometry.position[i*3+1]*-m_Scale;
+			m_CurrGeometryPos[i].z = geometry.position[i*3+2]*m_Scale;
+		}
 	}
+
+	m_Pos = mix(m_LastPos, m_CurrPos, m_Tick / (1.f/30));
+	for (int i=0; i<geometry.numTrianglesUsed*3; i++)
+		m_GeometryPos[i] = mix(m_LastGeometryPos[i], m_CurrGeometryPos[i], m_Tick / (1.f/30));
 }
 
 void CMarioCore::deleteBlocks()
