@@ -36,7 +36,7 @@ public:
 	SM64MarioGeometryBuffers geometry;
 
 	vec2 m_Pos, m_LastPos, m_CurrPos;
-	vec3 m_GeometryPos[SM64_GEO_MAX_TRIANGLES * 3], m_LastGeometryPos[SM64_GEO_MAX_TRIANGLES * 3], m_CurrGeometryPos[SM64_GEO_MAX_TRIANGLES * 3];
+	float m_GeometryPos[SM64_GEO_MAX_TRIANGLES * 9], m_LastGeometryPos[SM64_GEO_MAX_TRIANGLES * 9], m_CurrGeometryPos[SM64_GEO_MAX_TRIANGLES * 9];
 
 	void Init(CWorldCore *pWorld, CCollision *pCollision, vec2 spawnpos, float scale);
 	void Destroy();

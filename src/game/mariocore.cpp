@@ -95,14 +95,14 @@ void CMarioCore::Tick(float tickspeed)
 		m_CurrPos = newPos;
 		for (int i=0; i<geometry.numTrianglesUsed*3; i++)
 		{
-			m_CurrGeometryPos[i].x = geometry.position[i*3+0]*m_Scale;
-			m_CurrGeometryPos[i].y = geometry.position[i*3+1]*-m_Scale;
-			m_CurrGeometryPos[i].z = geometry.position[i*3+2]*m_Scale;
+			m_CurrGeometryPos[i*3+0] = geometry.position[i*3+0]*m_Scale;
+			m_CurrGeometryPos[i*3+1] = geometry.position[i*3+1]*-m_Scale;
+			m_CurrGeometryPos[i*3+2] = geometry.position[i*3+2]*m_Scale;
 		}
 	}
 
 	m_Pos = mix(m_LastPos, m_CurrPos, m_Tick / (1.f/30));
-	for (int i=0; i<geometry.numTrianglesUsed*3; i++)
+	for (int i=0; i<geometry.numTrianglesUsed*9; i++)
 		m_GeometryPos[i] = mix(m_LastGeometryPos[i], m_CurrGeometryPos[i], m_Tick / (1.f/30));
 }
 
