@@ -2,11 +2,24 @@
 #define GAME_CLIENT_COMPONENTS_MARIOS_H
 #include <game/client/component.h>
 
+#include <GL/glew.h> // hacky
+
 #include <engine/client.h>
+#include <engine/client/backend/opengl/backend_opengl.h> // hacky
 #include <engine/console.h>
 
 #include <game/client/render.h>
 #include <game/generated/protocol.h>
+
+extern "C" {
+	#include <libsm64.h>
+}
+
+struct CMarioMesh
+{
+	GLuint position_buffer, normal_buffer, color_buffer, uv_buffer;
+	GLuint vao;
+};
 
 class CMarios : public CComponent
 {
@@ -19,9 +32,12 @@ public:
 private:
 	static void ConMario(IConsole::IResult *pResult, void *pUserData);
 
-	int m_MarioBuffers[MAX_CLIENTS];
+	CMarioMesh m_MarioMeshes[MAX_CLIENTS];
 	uint8_t *m_MarioTexture;
-	IGraphics::CTextureHandle m_MarioTexHandle;
+	uint16_t m_MarioIndices[SM64_GEO_MAX_TRIANGLES * 3];
+	GLuint m_MarioTexHandle;
+	GLuint m_MarioShaderHandle;
+	bool m_LoadedOnce;
 };
 
 #endif
