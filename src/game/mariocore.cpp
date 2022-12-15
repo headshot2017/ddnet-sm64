@@ -68,6 +68,7 @@ void CMarioCore::Reset()
 		geometry.normal   = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
 		geometry.color    = (float*)malloc( sizeof(float) * 9 * SM64_GEO_MAX_TRIANGLES );
 		geometry.uv       = (float*)malloc( sizeof(float) * 6 * SM64_GEO_MAX_TRIANGLES );
+		geometry.numTrianglesUsed = 0;
 	}
 }
 
