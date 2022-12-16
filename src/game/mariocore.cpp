@@ -99,11 +99,13 @@ void CMarioCore::Tick(float tickspeed)
 		if ((int)(newPos.x/32) != (int)(m_Pos.x/32) || (int)(newPos.y/32) != (int)(m_Pos.y/32))
 			loadNewBlocks(newPos.x/32, newPos.y/32);
 
+		newPos.y += 16;
+
 		m_CurrPos = newPos;
 		for (int i=0; i<geometry.numTrianglesUsed*3; i++)
 		{
 			m_CurrGeometryPos[i*3+0] = geometry.position[i*3+0]*m_Scale;
-			m_CurrGeometryPos[i*3+1] = geometry.position[i*3+1]*-m_Scale;
+			m_CurrGeometryPos[i*3+1] = geometry.position[i*3+1]*-m_Scale + 16;
 			m_CurrGeometryPos[i*3+2] = geometry.position[i*3+2]*m_Scale;
 		}
 	}

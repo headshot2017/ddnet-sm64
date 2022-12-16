@@ -92,7 +92,7 @@ void CMario::Tick()
 	m_Pos = m_Core.m_Pos;
 	player->m_ViewPos = vec2(m_Pos.x, m_Pos.y-48);
 
-	character->Core()->m_Pos = character->m_Pos = m_Pos;
+	character->Core()->m_Pos = character->m_Pos = vec2(m_Pos.x, m_Pos.y-8);
 	character->Core()->m_Vel = vec2(0,0);
 	character->ResetHook();
 }
@@ -175,9 +175,6 @@ void CMario::Snap(int SnappingClient)
 		vertex.y = (vertex.y - m_Pos.y) * drawScale + m_Pos.y;
 		vertexTo.x = (vertexTo.x - m_Pos.x) * drawScale + m_Pos.x;
 		vertexTo.y = (vertexTo.y - m_Pos.y) * drawScale + m_Pos.y;
-
-		vertex.y += 8;
-		vertexTo.y += 8;
 
 		bool repeated = false;
 
