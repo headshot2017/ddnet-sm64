@@ -26,10 +26,17 @@ void CMarioCore::Init(CWorldCore *pWorld, CCollision *pCollision, vec2 spawnpos,
 	Reset();
 }
 
+CMarioCore::~CMarioCore()
+{
+	Destroy();
+}
+
 void CMarioCore::Destroy()
 {
 	if (Spawned())
 	{
+		deleteBlocks();
+
 		free(geometry.position);
 		free(geometry.normal);
 		free(geometry.color);

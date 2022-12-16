@@ -31,6 +31,8 @@ class CMarioCore
 	void exportMap(int spawnX, int spawnY);
 
 public:
+	~CMarioCore();
+
 	SM64MarioState state;
 	SM64MarioInputs input;
 	SM64MarioGeometryBuffers geometry;
