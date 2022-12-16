@@ -206,6 +206,19 @@ void CMenus::RenderGame(CUIRect MainView)
 			}
 		}
 	}
+
+	if(m_pClient->m_Snap.m_pLocalInfo->m_Team != TEAM_SPECTATORS && !Paused && !Spec)
+	{
+		ButtonBar.VSplitLeft(5.0f, 0, &ButtonBar);
+		ButtonBar.VSplitLeft(65.0f, &Button, &ButtonBar);
+
+		static CButtonContainer s_MarioButton;
+		if(DoButton_Menu(&s_MarioButton, "Mario", 0, &Button))
+		{
+			m_pClient->Console()->ExecuteLine("mario");
+			SetActive(false);
+		}
+	}
 }
 
 void CMenus::RenderPlayers(CUIRect MainView)
