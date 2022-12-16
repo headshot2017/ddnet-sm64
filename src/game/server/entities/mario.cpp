@@ -127,7 +127,7 @@ void CMario::Snap(int SnappingClient)
 				std::vector<quickhull::Vector3<float> > pointCloud;
 
 				for (int i=0; i<3 * m_Core.geometry.numTrianglesUsed; i++)
-					pointCloud.push_back(quickhull::Vector3<float>(m_Core.m_GeometryPos[i*3+0], m_Core.m_GeometryPos[i*3+1], m_Core.m_GeometryPos[i*3+2]));
+					pointCloud.push_back(quickhull::Vector3<float>(m_Core.geometry.position[i*3+0], m_Core.geometry.position[i*3+1], m_Core.geometry.position[i*3+2]));
 
 				quickhull::ConvexHull<float> hull = qh.getConvexHull(pointCloud, true, false);
 				indexBuffer = hull.getIndexBuffer();
@@ -141,7 +141,7 @@ void CMario::Snap(int SnappingClient)
 				std::vector<Coordinate> polygonPoints;
 
 				for (int i=0; i<3 * m_Core.geometry.numTrianglesUsed; i++)
-					polygonPoints.push_back({m_Core.m_GeometryPos[i*3+0], m_Core.m_GeometryPos[i*3+1]});
+					polygonPoints.push_back({m_Core.geometry.position[i*3+0], m_Core.geometry.position[i*3+1]});
 
 				Polygon polygon(polygonPoints);
 				convexHull = polygon.ComputeConvexHull();
@@ -156,7 +156,7 @@ void CMario::Snap(int SnappingClient)
 		switch(g_Config.m_MarioDrawMode)
 		{
 			case 0:
-				vertex = ivec2((int)m_Core.m_GeometryPos[i*3+0], (int)m_Core.m_GeometryPos[i*3+1]);
+				vertex = ivec2((int)m_Core.geometry.position[i*3+0], (int)m_Core.geometry.position[i*3+1]);
 				vertexTo = vertex;
 				break;
 

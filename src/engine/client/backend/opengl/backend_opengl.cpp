@@ -1,9 +1,12 @@
 #include "backend_opengl.h"
 
+#include <string.h>
+
 #include <engine/graphics.h>
 
 #include <engine/client/backend_sdl.h>
 
+#include <base/cglm.h>
 #include <base/detect.h>
 
 #if defined(BACKEND_AS_OPENGL_ES) || !defined(CONF_BACKEND_OPENGL_ES)
@@ -1127,6 +1130,10 @@ bool CCommandProcessorFragment_OpenGL::RunCommand(const CCommandBuffer::SCommand
 	case CCommandBuffer::CMD_RENDER_QUAD_CONTAINER: Cmd_RenderQuadContainer(static_cast<const CCommandBuffer::SCommand_RenderQuadContainer *>(pBaseCommand)); break;
 	case CCommandBuffer::CMD_RENDER_QUAD_CONTAINER_EX: Cmd_RenderQuadContainerEx(static_cast<const CCommandBuffer::SCommand_RenderQuadContainerEx *>(pBaseCommand)); break;
 	case CCommandBuffer::CMD_RENDER_QUAD_CONTAINER_SPRITE_MULTIPLE: Cmd_RenderQuadContainerAsSpriteMultiple(static_cast<const CCommandBuffer::SCommand_RenderQuadContainerAsSpriteMultiple *>(pBaseCommand)); break;
+	case CCommandBuffer::CMD_MARIO_FIRST_INIT: Cmd_FirstInitMario(static_cast<const CCommandBuffer::SCommand_FirstInitMario *>(pBaseCommand)); break;
+	case CCommandBuffer::CMD_MARIO_INIT: Cmd_InitMario(static_cast<const CCommandBuffer::SCommand_InitMario *>(pBaseCommand)); break;
+	case CCommandBuffer::CMD_MARIO_DESTROY: Cmd_DestroyMario(static_cast<const CCommandBuffer::SCommand_DestroyMario *>(pBaseCommand)); break;
+	case CCommandBuffer::CMD_MARIO_UPDATE_AND_RENDER: Cmd_UpdateAndRenderMario(static_cast<const CCommandBuffer::SCommand_UpdateAndRenderMario *>(pBaseCommand)); break;
 	default: return false;
 	}
 
@@ -2329,6 +2336,158 @@ void CCommandProcessorFragment_OpenGL2::Cmd_RenderTileLayer(const CCommandBuffer
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glUseProgram(0);
 	}
+}
+
+// mario
+
+GLuint shader_compile( const char *shaderContents, size_t shaderContentsLength, GLenum shaderType )
+{
+    const GLchar *shaderDefine = shaderType == GL_VERTEX_SHADER 
+        ? "\n#version 130\n#define VERTEX  \n#define v2f out\n" 
+        : "\n#version 130\n#define FRAGMENT\n#define v2f in \n";
+
+    const GLchar *shaderStrings[2] = { shaderDefine, shaderContents };
+    GLint shaderStringLengths[2] = { (GLint)strlen( shaderDefine ), (GLint)shaderContentsLength };
+
+    GLuint shader = glCreateShader( shaderType );
+    glShaderSource( shader, 2, shaderStrings, shaderStringLengths );
+    glCompileShader( shader );
+
+    GLint isCompiled = 0;
+    glGetShaderiv( shader, GL_COMPILE_STATUS, &isCompiled );
+    if( isCompiled == GL_FALSE ) 
+    {
+        GLint maxLength = 0;
+        glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &maxLength );
+        char *log = (char*)malloc( maxLength );
+        glGetShaderInfoLog( shader, maxLength, &maxLength, log );
+
+        dbg_msg("libsm64", "%s shader compilation failure (%d): %s", (shaderType == GL_VERTEX_SHADER) ? "Vertex" : "Fragment", maxLength, log);
+    }
+	else
+		dbg_msg("libsm64", "%s shader compiled", (shaderType == GL_VERTEX_SHADER) ? "Vertex" : "Fragment");
+
+    return shader;
+}
+
+void CCommandProcessorFragment_OpenGL2::Cmd_FirstInitMario(const CCommandBuffer::SCommand_FirstInitMario *pCommand)
+{
+	uint32_t *shader = pCommand->m_ShaderHandle;
+	uint32_t *texture = pCommand->m_TextureHandle;
+	uint8_t *marioTexture = pCommand->m_Texture;
+	const char *shaderCode = pCommand->m_ShaderCode;
+
+	GLuint vert = shader_compile(shaderCode, strlen(shaderCode), GL_VERTEX_SHADER);
+	GLuint frag = shader_compile(shaderCode, strlen(shaderCode), GL_FRAGMENT_SHADER);
+
+	*shader = glCreateProgram();
+	glAttachShader(*shader, vert);
+	glAttachShader(*shader, frag);
+
+	const GLchar *attribs[] = {"position", "normal", "color", "uv"};
+	for (int i=6; i<10; i++) glBindAttribLocation(*shader, i, attribs[i-6]);
+
+	glLinkProgram(*shader);
+	glDetachShader(*shader, vert);
+	glDetachShader(*shader, frag);
+
+	// initialize texture
+	glGenTextures(1, texture);
+	glBindTexture(GL_TEXTURE_2D, *texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SM64_TEXTURE_WIDTH, SM64_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, marioTexture);
+
+	//dbg_msg("libsm64", "texture & shader: %d %d", *texture, *shader);
+}
+
+void CCommandProcessorFragment_OpenGL2::Cmd_InitMario(const CCommandBuffer::SCommand_InitMario *pCommand)
+{
+	CMarioMesh *mesh = pCommand->m_Mesh;
+	SM64MarioGeometryBuffers *geometry = pCommand->m_Geometry;
+
+	glGenVertexArrays( 1, &mesh->vao );
+	glBindVertexArray( mesh->vao );
+
+	#define X( loc, buff, arr, type ) do { \
+		glGenBuffers( 1, &buff ); \
+		glBindBuffer( GL_ARRAY_BUFFER, buff ); \
+		glBufferData( GL_ARRAY_BUFFER, sizeof( type ) * 3 * SM64_GEO_MAX_TRIANGLES, arr, GL_DYNAMIC_DRAW ); \
+		glEnableVertexAttribArray( loc ); \
+		glVertexAttribPointer( loc, sizeof( type ) / sizeof( float ), GL_FLOAT, GL_FALSE, sizeof( type ), NULL ); \
+	} while( 0 )
+
+		X( 6, mesh->position_buffer, geometry->position,     VEC3 );
+		X( 7, mesh->normal_buffer,   geometry->normal,       VEC3 );
+		X( 8, mesh->color_buffer,    geometry->color,        VEC3 );
+		X( 9, mesh->uv_buffer,       geometry->uv,           VEC2 );
+
+	#undef X
+
+	glBindVertexArray(0);
+
+	//GLenum err = glGetError();
+	//dbg_msg("glerror", "%d - %d %d %d %d %d %d %d", err, GL_INVALID_ENUM, GL_INVALID_VALUE, GL_INVALID_OPERATION, GL_INVALID_FRAMEBUFFER_OPERATION, GL_OUT_OF_MEMORY, GL_STACK_UNDERFLOW, GL_STACK_OVERFLOW);
+
+	dbg_msg("libsm64", "%d %d %d %d %d", mesh->position_buffer, mesh->normal_buffer, mesh->color_buffer, mesh->uv_buffer, mesh->vao);
+}
+
+void CCommandProcessorFragment_OpenGL2::Cmd_DestroyMario(const CCommandBuffer::SCommand_DestroyMario *pCommand)
+{
+	CMarioMesh *mesh = pCommand->m_Mesh;
+
+	glDeleteVertexArrays(1, &mesh->vao);
+	glDeleteBuffers(1, &mesh->position_buffer);
+	glDeleteBuffers(1, &mesh->normal_buffer);
+	glDeleteBuffers(1, &mesh->color_buffer);
+	glDeleteBuffers(1, &mesh->uv_buffer);
+}
+
+void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandBuffer::SCommand_UpdateAndRenderMario *pCommand)
+{
+	CMarioMesh *mesh = pCommand->m_Mesh;
+	SM64MarioGeometryBuffers *geometry = pCommand->m_Geometry;
+	uint32_t *shader = pCommand->m_ShaderHandle;
+	uint32_t *texture = pCommand->m_TextureHandle;
+	float *camPos = pCommand->m_CamPos;
+	float *currPos = pCommand->m_CurrPos;
+	uint16_t *indices = pCommand->m_Indices;
+
+	glBindBuffer( GL_ARRAY_BUFFER, mesh->position_buffer );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->position, GL_DYNAMIC_DRAW );
+    glBindBuffer( GL_ARRAY_BUFFER, mesh->normal_buffer );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->normal, GL_DYNAMIC_DRAW );
+    glBindBuffer( GL_ARRAY_BUFFER, mesh->color_buffer );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->color, GL_DYNAMIC_DRAW );
+    glBindBuffer( GL_ARRAY_BUFFER, mesh->uv_buffer );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC2 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->uv, GL_DYNAMIC_DRAW );
+
+	VEC3 up = {0,1,0};
+
+	MAT4 view, projection;
+	glm_ortho(-512, 1600, -100, 900, 0.1f, 10000.f, projection);
+	//memset( view, 0, sizeof(mat4) );
+    glm_translate( view, camPos );
+    glm_lookat( camPos, currPos, up, view );
+	//memset( projection, 1, sizeof(mat4) );
+
+	//glEnable(GL_DEPTH_TEST);
+
+	glUseProgram(*shader);
+	glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, *texture);
+    glBindVertexArray(mesh->vao);
+	glUniformMatrix4fv(glGetUniformLocation(*shader, "view"), 1, GL_FALSE, (GLfloat*)view);
+	glUniformMatrix4fv(glGetUniformLocation(*shader, "projection"), 1, GL_FALSE, (GLfloat*)projection);
+	glUniform1i(glGetUniformLocation(*shader, "marioTex"), 2);
+    glDrawElements(GL_TRIANGLES, geometry->numTrianglesUsed*3, GL_UNSIGNED_SHORT, indices);
+	glActiveTexture(GL_TEXTURE0);
+	glUseProgram(0);
+	glBindVertexArray(0);
+
+	//glDisable(GL_DEPTH_TEST);
 }
 
 #undef BACKEND_GL_MODERN_API

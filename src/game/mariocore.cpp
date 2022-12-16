@@ -103,7 +103,7 @@ void CMarioCore::Tick(float tickspeed)
 
 	m_Pos = mix(m_LastPos, m_CurrPos, m_Tick / (1.f/30));
 	for (int i=0; i<geometry.numTrianglesUsed*9; i++)
-		m_GeometryPos[i] = mix(m_LastGeometryPos[i], m_CurrGeometryPos[i], m_Tick / (1.f/30));
+		geometry.position[i] = mix(m_LastGeometryPos[i], m_CurrGeometryPos[i], m_Tick / (1.f/30));
 }
 
 void CMarioCore::deleteBlocks()

@@ -124,6 +124,12 @@ protected:
 	virtual void Cmd_RenderQuadContainerEx(const CCommandBuffer::SCommand_RenderQuadContainerEx *pCommand) { dbg_assert(false, "Call of unsupported Cmd_RenderQuadContainerEx"); }
 	virtual void Cmd_RenderQuadContainerAsSpriteMultiple(const CCommandBuffer::SCommand_RenderQuadContainerAsSpriteMultiple *pCommand) { dbg_assert(false, "Call of unsupported Cmd_RenderQuadContainerAsSpriteMultiple"); }
 
+	// mario
+	virtual void Cmd_FirstInitMario(const CCommandBuffer::SCommand_FirstInitMario *pCommand) { dbg_assert(false, "Call of unsupported Cmd_FirstInitMario"); }
+	virtual void Cmd_InitMario(const CCommandBuffer::SCommand_InitMario *pCommand) { dbg_assert(false, "Call of unsupported Cmd_InitMario"); }
+	virtual void Cmd_DestroyMario(const CCommandBuffer::SCommand_DestroyMario *pCommand) { dbg_assert(false, "Call of unsupported Cmd_DestroyMario"); }
+	virtual void Cmd_UpdateAndRenderMario(const CCommandBuffer::SCommand_UpdateAndRenderMario *pCommand) { dbg_assert(false, "Call of unsupported Cmd_UpdateAndRenderMario"); }
+
 public:
 	CCommandProcessorFragment_OpenGL();
 	virtual ~CCommandProcessorFragment_OpenGL() = default;
@@ -191,6 +197,12 @@ protected:
 	void Cmd_RenderTileLayer(const CCommandBuffer::SCommand_RenderTileLayer *pCommand) override;
 	void Cmd_RenderBorderTile(const CCommandBuffer::SCommand_RenderBorderTile *pCommand) override;
 	void Cmd_RenderBorderTileLine(const CCommandBuffer::SCommand_RenderBorderTileLine *pCommand) override;
+
+	// mario
+	void Cmd_FirstInitMario(const CCommandBuffer::SCommand_FirstInitMario *pCommand) override;
+	void Cmd_InitMario(const CCommandBuffer::SCommand_InitMario *pCommand) override;
+	void Cmd_DestroyMario(const CCommandBuffer::SCommand_DestroyMario *pCommand) override;
+	void Cmd_UpdateAndRenderMario(const CCommandBuffer::SCommand_UpdateAndRenderMario *pCommand) override;
 #endif
 
 	CGLSLTileProgram *m_pTileProgram;

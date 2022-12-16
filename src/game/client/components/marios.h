@@ -15,12 +15,6 @@ extern "C" {
 	#include <libsm64.h>
 }
 
-struct CMarioMesh
-{
-	GLuint position_buffer, normal_buffer, color_buffer, uv_buffer;
-	GLuint vao;
-};
-
 class CMarios : public CComponent
 {
 public:
@@ -35,9 +29,8 @@ private:
 	CMarioMesh m_MarioMeshes[MAX_CLIENTS];
 	uint8_t *m_MarioTexture;
 	uint16_t m_MarioIndices[SM64_GEO_MAX_TRIANGLES * 3];
-	GLuint m_MarioTexHandle;
-	GLuint m_MarioShaderHandle;
-	bool m_LoadedOnce;
+	uint32_t m_MarioTexHandle;
+	uint32_t m_MarioShaderHandle;
 };
 
 #endif

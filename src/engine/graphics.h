@@ -3,6 +3,8 @@
 #ifndef ENGINE_GRAPHICS_H
 #define ENGINE_GRAPHICS_H
 
+#include <GL/glew.h> // hacky
+
 #include "kernel.h"
 #include "warning.h"
 
@@ -18,6 +20,11 @@
 #define GRAPHICS_TYPE_INT 0x1404
 #define GRAPHICS_TYPE_UNSIGNED_INT 0x1405
 #define GRAPHICS_TYPE_FLOAT 0x1406
+
+extern "C" {
+	#include <libsm64.h>
+}
+
 struct SBufferContainerInfo
 {
 	int m_Stride;
@@ -60,6 +67,12 @@ struct SGraphicTileTexureCoords
 	vec3 m_TexCoordTopRight;
 	vec3 m_TexCoordBottomRight;
 	vec3 m_TexCoordBottomLeft;
+};
+
+struct CMarioMesh
+{
+	uint32_t position_buffer, normal_buffer, color_buffer, uv_buffer;
+	uint32_t vao;
 };
 
 class CImageInfo
@@ -509,6 +522,12 @@ public:
 	virtual TGLBackendReadPresentedImageData &GetReadPresentedImageDataFuncUnsafe() = 0;
 
 	virtual SWarning *GetCurWarning() = 0;
+
+	// mario
+	virtual void firstInitMario(uint32_t* shader, uint32_t* texture, uint8_t* marioTexture, const char *shaderCode) = 0;
+	virtual void initMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry) = 0;
+	virtual void destroyMario(CMarioMesh* mesh) = 0;
+	virtual void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, float* camPos, float* currPos, uint16_t* indices) = 0;
 
 protected:
 	inline CTextureHandle CreateTextureHandle(int Index)

@@ -137,6 +137,12 @@ public:
 		CMD_WINDOW_CREATE_NTF,
 		CMD_WINDOW_DESTROY_NTF,
 
+		// mario
+		CMD_MARIO_FIRST_INIT,
+		CMD_MARIO_INIT,
+		CMD_MARIO_DESTROY,
+		CMD_MARIO_UPDATE_AND_RENDER,
+
 		CMD_COUNT,
 	};
 
@@ -630,6 +636,48 @@ public:
 		uint32_t m_WindowID;
 	};
 
+	struct SCommand_FirstInitMario : public CCommandBuffer::SCommand
+	{
+		SCommand_FirstInitMario() :
+			SCommand(CMD_MARIO_FIRST_INIT) {}
+
+		uint32_t *m_ShaderHandle;
+		uint32_t *m_TextureHandle;
+		uint8_t *m_Texture;
+		const char *m_ShaderCode;
+	};
+
+	struct SCommand_InitMario : public CCommandBuffer::SCommand
+	{
+		SCommand_InitMario() :
+			SCommand(CMD_MARIO_INIT) {}
+
+		CMarioMesh *m_Mesh;
+		SM64MarioGeometryBuffers *m_Geometry;
+	};
+
+	struct SCommand_DestroyMario : public CCommandBuffer::SCommand
+	{
+		SCommand_DestroyMario() :
+			SCommand(CMD_MARIO_DESTROY) {}
+
+		CMarioMesh *m_Mesh;
+	};
+
+	struct SCommand_UpdateAndRenderMario : public CCommandBuffer::SCommand
+	{
+		SCommand_UpdateAndRenderMario() :
+			SCommand(CMD_MARIO_UPDATE_AND_RENDER) {}
+
+		CMarioMesh *m_Mesh;
+		SM64MarioGeometryBuffers *m_Geometry;
+		uint32_t *m_ShaderHandle;
+		uint32_t *m_TextureHandle;
+		float *m_CamPos;
+		float *m_CurrPos;
+		uint16_t *m_Indices;
+	};
+
 	//
 	CCommandBuffer(unsigned CmdBufferSize, unsigned DataBufferSize) :
 		m_CmdBuffer(CmdBufferSize), m_DataBuffer(DataBufferSize), m_pCmdBufferHead(nullptr), m_pCmdBufferTail(nullptr)
@@ -770,6 +818,12 @@ public:
 
 	// be aware that this function should only be called from the graphics thread, and even then you should really know what you are doing
 	virtual TGLBackendReadPresentedImageData &GetReadPresentedImageDataFuncUnsafe() = 0;
+
+	// mario
+	virtual void firstInitMario(uint32_t* shader, uint32_t* texture, uint8_t* marioTexture, const char *shaderCode) {}
+	virtual void initMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry) {}
+	virtual void destroyMario(CMarioMesh* mesh) {}
+	virtual void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, float* camPos, float* currPos, uint16_t* indices) {}
 };
 
 class CGraphics_Threaded : public IEngineGraphics
@@ -1311,6 +1365,12 @@ public:
 	const char *GetRendererString() override;
 
 	TGLBackendReadPresentedImageData &GetReadPresentedImageDataFuncUnsafe() override;
+
+	// mario
+	void firstInitMario(uint32_t* shader, uint32_t* texture, uint8_t* marioTexture, const char *shaderCode) override;
+	void initMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry) override;
+	void destroyMario(CMarioMesh* mesh) override;
+	void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, float* camPos, float* currPos, uint16_t* indices) override;
 };
 
 extern IGraphicsBackend *CreateGraphicsBackend();

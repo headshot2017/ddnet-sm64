@@ -4,6 +4,7 @@
 
 #include "marios.h"
 
+#include <base/cglm.h>
 #include <base/math.h>
 #include <base/system.h>
 #include <base/vmath.h>
@@ -20,11 +21,9 @@ extern "C" {
 
 using namespace std::chrono_literals;
 
-typedef float VEC2[2];
-typedef float VEC3[3];
-
 static const char *MARIO_SHADER =
-"\n uniform mat3 viewproj;"
+"\n uniform mat4 view;"
+"\n uniform mat4 projection;"
 "\n uniform sampler2D marioTex;"
 "\n "
 "\n v2f vec3 v_color;"
@@ -43,10 +42,10 @@ static const char *MARIO_SHADER =
 "\n     {"
 "\n         v_color = color;"
 "\n         v_normal = normal;"
-"\n         v_light = /*transpose( mat3( view )) * */ normalize( vec3( 1 ));"
+"\n         v_light = transpose( mat3( view )) * normalize( vec3( 1 ));"
 "\n         v_uv = uv;"
 "\n "
-"\n         gl_Position = viewproj * vec4( position, 1. );"
+"\n         gl_Position = projection * view * vec4( position, 1. );"
 "\n     }"
 "\n "
 "\n #endif"
@@ -64,37 +63,9 @@ static const char *MARIO_SHADER =
 "\n "
 "\n #endif";
 
-GLuint shader_compile( const char *shaderContents, size_t shaderContentsLength, GLenum shaderType )
-{
-    const GLchar *shaderDefine = shaderType == GL_VERTEX_SHADER 
-        ? "\n#version 130\n#define VERTEX  \n#define v2f out\n" 
-        : "\n#version 130\n#define FRAGMENT\n#define v2f in \n";
-
-    const GLchar *shaderStrings[2] = { shaderDefine, shaderContents };
-    GLint shaderStringLengths[2] = { (GLint)strlen( shaderDefine ), (GLint)shaderContentsLength };
-
-    GLuint shader = glCreateShader( shaderType );
-    glShaderSource( shader, 2, shaderStrings, shaderStringLengths );
-    glCompileShader( shader );
-
-    GLint isCompiled;
-    glGetShaderiv( shader, GL_COMPILE_STATUS, &isCompiled );
-    if( isCompiled == GL_FALSE ) 
-    {
-        GLint maxLength;
-        glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &maxLength );
-        char *log = (char*)malloc( maxLength );
-        glGetShaderInfoLog( shader, maxLength, &maxLength, log );
-
-        dbg_msg("libsm64", "%s shader compilation failure: %s", (shaderType == GL_VERTEX_SHADER) ? "Vertex" : "Fragment", log);
-    }
-	else
-		dbg_msg("libsm64", "%s shader compiled", (shaderType == GL_VERTEX_SHADER) ? "Vertex" : "Fragment");
-
-    return shader;
-}
 
 
+// idea: move all these to their own engine/graphics functions
 
 void CMarios::OnConsoleInit()
 {
@@ -157,23 +128,9 @@ void CMarios::OnInit()
 			sm64_play_sound_global(SOUND_MENU_STAR_SOUND);
 			free(romBuffer);
 
-			// initialize shader
-			GLuint vert = shader_compile(MARIO_SHADER, strlen(MARIO_SHADER), GL_VERTEX_SHADER);
-			GLuint frag = shader_compile(MARIO_SHADER, strlen(MARIO_SHADER), GL_FRAGMENT_SHADER);
-
-			m_MarioShaderHandle = glCreateProgram();
-			glAttachShader(m_MarioShaderHandle, vert);
-			glAttachShader(m_MarioShaderHandle, frag);
-
-			const GLchar *attribs[] = {"position", "normal", "color", "uv"};
-			for (int i=6; i<10; i++) glBindAttribLocation(m_MarioShaderHandle, i, attribs[i-6]);
-
-			glLinkProgram(m_MarioShaderHandle);
-			glDetachShader(m_MarioShaderHandle, vert);
-			glDetachShader(m_MarioShaderHandle, frag);
+			Graphics()->firstInitMario(&m_MarioShaderHandle, &m_MarioTexHandle, m_MarioTexture, MARIO_SHADER);
 
 			for(int i=0; i<3*SM64_GEO_MAX_TRIANGLES; i++) m_MarioIndices[i] = i;
-			m_LoadedOnce = false;
 		}
 	}
 }
@@ -198,36 +155,11 @@ void CMarios::OnRender()
 
 	mario->Tick(Client()->RenderFrameTime());
 
-	//Graphics()->RecreateBufferObject(m_MarioBuffers[ID], SM64_GEO_MAX_TRIANGLES, mario->geometry.position, 0);
 	CMarioMesh *mesh = &m_MarioMeshes[ID];
-	glBindBuffer( GL_ARRAY_BUFFER, mesh->position_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, mario->m_GeometryPos, GL_DYNAMIC_DRAW );
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->normal_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, mario->geometry.normal, GL_DYNAMIC_DRAW );
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->color_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, mario->geometry.color, GL_DYNAMIC_DRAW );
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->uv_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC2 ) * 3 * SM64_GEO_MAX_TRIANGLES, mario->geometry.uv, GL_DYNAMIC_DRAW );
+	float camPos[3] = {m_pClient->m_Camera.m_Center.x, m_pClient->m_Camera.m_Center.y, 0};
+	float currPos[3] = {mario->m_CurrPos.x, mario->m_CurrPos.y, 0};
 
-	const float sx = 2.0f / (float)Graphics()->ScreenWidth();
-	const float sy = -2.0f / (float)Graphics()->ScreenHeight();
-
-	const float tx = -1.0f;
-	const float ty = 1.0f;
-
-	const float mvp_matrix[] = {
-		sx, 0, tx,
-		0, sy, ty,
-		0, 0, 1
-	};
-
-	glUseProgram(m_MarioShaderHandle);
-	glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_MarioTexHandle);
-    glBindVertexArray(mesh->vao);
-	glUniformMatrix3fv(glGetUniformLocation(m_MarioShaderHandle, "viewproj"), 1, GL_FALSE, (GLfloat*)mvp_matrix);
-	glUniform1i(glGetUniformLocation(m_MarioShaderHandle, "marioTex"), 2);
-    glDrawElements(GL_TRIANGLES, mario->geometry.numTrianglesUsed*3, GL_UNSIGNED_SHORT, m_MarioIndices);
+	Graphics()->updateAndRenderMario(mesh, &mario->geometry, &m_MarioShaderHandle, &m_MarioTexHandle, camPos, currPos, m_MarioIndices);
 }
 
 void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
@@ -247,44 +179,9 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 		pSelf->m_pClient->m_GameWorld.m_Core.m_apMarios[ID] = mario;
 
 		// create mario vertex
-		//virtual int CreateBufferObject(size_t UploadDataSize, void *pUploadData, int CreateFlags, bool IsMovedPointer = false) = 0;
-		//pSelf->m_MarioBuffers[ID] = pSelf->Graphics()->CreateBufferObject(SM64_GEO_MAX_TRIANGLES, mario->geometry.position, 0);
-
-		if (!pSelf->m_LoadedOnce)
-		{
-			pSelf->m_LoadedOnce = true;
-
-			// initialize texture
-			//m_MarioTexHandle = Graphics()->LoadTextureRaw(SM64_TEXTURE_WIDTH, SM64_TEXTURE_HEIGHT, CImageInfo::FORMAT_RGBA, m_MarioTexture, CImageInfo::FORMAT_RGBA, 0);
-			glGenTextures(1, &pSelf->m_MarioTexHandle);
-			glBindTexture(GL_TEXTURE_2D, pSelf->m_MarioTexHandle);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SM64_TEXTURE_WIDTH, SM64_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pSelf->m_MarioTexture);
-
-			dbg_msg("libsm64", "%d %d", pSelf->m_MarioTexHandle, pSelf->m_MarioShaderHandle);
-		}
 
 		CMarioMesh *mesh = &pSelf->m_MarioMeshes[ID];
-		glGenVertexArrays( 1, &mesh->vao );
-		glBindVertexArray( mesh->vao );
-
-		#define X( loc, buff, arr, type ) do { \
-			glGenBuffers( 1, &buff ); \
-			glBindBuffer( GL_ARRAY_BUFFER, buff ); \
-			glBufferData( GL_ARRAY_BUFFER, sizeof( type ) * 3 * SM64_GEO_MAX_TRIANGLES, arr, GL_DYNAMIC_DRAW ); \
-			glEnableVertexAttribArray( loc ); \
-			glVertexAttribPointer( loc, sizeof( type ) / sizeof( float ), GL_FLOAT, GL_FALSE, sizeof( type ), NULL ); \
-		} while( 0 )
-
-			X( 6, mesh->position_buffer, mario->m_GeometryPos,     VEC3 );
-			X( 7, mesh->normal_buffer,   mario->geometry.normal,   VEC3 );
-			X( 8, mesh->color_buffer,    mario->geometry.color,    VEC3 );
-			X( 9, mesh->uv_buffer,       mario->geometry.uv,       VEC2 );
-
-		#undef X
+		pSelf->Graphics()->initMario(mesh, &mario->geometry);
 
 		dbg_msg("libsm64", "%d %d %d %d %d", mesh->position_buffer, mesh->normal_buffer, mesh->color_buffer, mesh->uv_buffer, mesh->vao);
 
@@ -296,12 +193,7 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 		pSelf->m_pClient->m_GameWorld.m_Core.m_apMarios[ID] = 0;
 
 		CMarioMesh *mesh = &pSelf->m_MarioMeshes[ID];
-
-		glDeleteVertexArrays(1, &mesh->vao);
-		glDeleteBuffers(1, &mesh->position_buffer);
-		glDeleteBuffers(1, &mesh->normal_buffer);
-		glDeleteBuffers(1, &mesh->color_buffer);
-		glDeleteBuffers(1, &mesh->uv_buffer);
+		pSelf->Graphics()->destroyMario(mesh);
 
 		dbg_msg("libsm64", "delete mario");
 	}

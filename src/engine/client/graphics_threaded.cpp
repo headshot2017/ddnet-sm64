@@ -8,6 +8,7 @@
 #include <pthread.h>
 #endif
 
+#include <string.h>
 #include <base/system.h>
 
 #include <engine/console.h>
@@ -3244,6 +3245,82 @@ int CGraphics_Threaded::GetVideoModes(CVideoMode *pModes, int MaxModes, int Scre
 	m_pBackend->GetVideoModes(pModes, MaxModes, &NumModes, m_ScreenHiDPIScale, g_Config.m_GfxDesktopWidth, g_Config.m_GfxDesktopHeight, Screen);
 
 	return NumModes;
+}
+
+
+// mario
+void CGraphics_Threaded::firstInitMario(uint32_t* shader, uint32_t* texture, uint8_t* marioTexture, const char *shaderCode)
+{
+	CCommandBuffer::SCommand_FirstInitMario Cmd;
+	Cmd.m_ShaderHandle = shader;
+	Cmd.m_TextureHandle = texture;
+	Cmd.m_Texture = marioTexture;
+	Cmd.m_ShaderCode = shaderCode;
+
+	if(!AddCmd(
+		   Cmd, [] { return true; }, "failed to add firstInitMario command"))
+	{
+		return;
+	}
+
+	// wait
+	KickCommandBuffer();
+	WaitForIdle();
+}
+
+void CGraphics_Threaded::initMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry)
+{
+	CCommandBuffer::SCommand_InitMario Cmd;
+	Cmd.m_Mesh = mesh;
+	Cmd.m_Geometry = geometry;
+
+	if(!AddCmd(
+		   Cmd, [] { return true; }, "failed to add initMario command"))
+	{
+		return;
+	}
+
+	// wait
+	KickCommandBuffer();
+	WaitForIdle();
+}
+
+void CGraphics_Threaded::destroyMario(CMarioMesh* mesh)
+{
+	CCommandBuffer::SCommand_DestroyMario Cmd;
+	Cmd.m_Mesh = mesh;
+
+	if(!AddCmd(
+		   Cmd, [] { return true; }, "failed to add destroyMario command"))
+	{
+		return;
+	}
+
+	// wait
+	KickCommandBuffer();
+	WaitForIdle();
+}
+
+void CGraphics_Threaded::updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, float* camPos, float* currPos, uint16_t* indices)
+{
+	CCommandBuffer::SCommand_UpdateAndRenderMario Cmd;
+	Cmd.m_Mesh = mesh;
+	Cmd.m_Geometry = geometry;
+	Cmd.m_ShaderHandle = shader;
+	Cmd.m_TextureHandle = texture;
+	Cmd.m_CamPos = camPos;
+	Cmd.m_CurrPos = currPos;
+	Cmd.m_Indices = indices;
+
+	if(!AddCmd(
+		   Cmd, [] { return true; }, "failed to add updateAndRenderMario command"))
+	{
+		return;
+	}
+
+	// wait
+	KickCommandBuffer();
+	WaitForIdle();
 }
 
 extern IEngineGraphics *CreateEngineGraphicsThreaded()
