@@ -103,8 +103,6 @@ void CMario::Snap(int SnappingClient)
 	if (!GameServer()->m_apPlayers[m_Owner] || !GameServer()->GetPlayerChar(m_Owner)) return;
 	if (NetworkClipped(SnappingClient, m_Pos)) return;
 
-	float drawScale = g_Config.m_MarioDrawScale / 100.f;
-
 	std::vector<ivec2> verticesSnapped;
 	for (int id : vertexIDs)
 		Server()->SnapFreeID(id);
@@ -170,11 +168,6 @@ void CMario::Snap(int SnappingClient)
 				vertexTo = ivec2((int)convexHull[i+1].GetX(), (int)convexHull[i+1].GetY());
 				break;
 		}
-
-		vertex.x = (vertex.x - m_Pos.x) * drawScale + m_Pos.x;
-		vertex.y = (vertex.y - m_Pos.y) * drawScale + m_Pos.y;
-		vertexTo.x = (vertexTo.x - m_Pos.x) * drawScale + m_Pos.x;
-		vertexTo.y = (vertexTo.y - m_Pos.y) * drawScale + m_Pos.y;
 
 		bool repeated = false;
 

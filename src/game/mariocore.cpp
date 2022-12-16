@@ -4,6 +4,8 @@
 
 #include <base/math.h>
 
+#include <engine/shared/config.h>
+
 #include "mariocore.h"
 #include "collision.h"
 
@@ -93,6 +95,7 @@ void CMarioCore::Tick(float tickspeed)
 		mem_copy(m_LastGeometryPos, m_CurrGeometryPos, sizeof(m_CurrGeometryPos));
 
 		sm64_reset_mario_z(marioId);
+		if (state.health != MARIO_DEAD_HEALTH && g_Config.m_MarioInvincible) sm64_mario_set_health(marioId, MARIO_FULL_HEALTH);
 		sm64_mario_tick(marioId, &input, &state, &geometry);
 
 		vec2 newPos(state.position[0]*m_Scale, -state.position[1]*m_Scale);
@@ -100,13 +103,14 @@ void CMarioCore::Tick(float tickspeed)
 			loadNewBlocks(newPos.x/32, newPos.y/32);
 
 		newPos.y += 16;
-
 		m_CurrPos = newPos;
+
+		float drawScale = g_Config.m_MarioDrawScale / 100.f;
 		for (int i=0; i<geometry.numTrianglesUsed*3; i++)
 		{
-			m_CurrGeometryPos[i*3+0] = geometry.position[i*3+0]*m_Scale;
-			m_CurrGeometryPos[i*3+1] = geometry.position[i*3+1]*-m_Scale + 16;
-			m_CurrGeometryPos[i*3+2] = geometry.position[i*3+2]*m_Scale;
+			m_CurrGeometryPos[i*3+0] = (geometry.position[i*3+0]*m_Scale - newPos.x) * drawScale + newPos.x;
+			m_CurrGeometryPos[i*3+1] = (geometry.position[i*3+1]*-m_Scale + 16 - newPos.y) * drawScale + newPos.y;
+			m_CurrGeometryPos[i*3+2] = (geometry.position[i*3+2]*m_Scale- (state.position[2]*m_Scale)) * drawScale + (state.position[2]*m_Scale);
 		}
 	}
 

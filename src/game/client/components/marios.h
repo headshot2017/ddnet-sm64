@@ -19,10 +19,14 @@ public:
 	virtual void OnInit() override;
 	virtual void OnConsoleInit() override;
 	virtual void OnMapLoad() override;
+	virtual void OnStateChange(int NewState, int OldState) override;
 	virtual void OnRender() override;
 
 private:
 	static void ConMario(IConsole::IResult *pResult, void *pUserData);
+	static void ConMarioKill(IConsole::IResult *pResult, void *pUserData);
+	static void ConMarioMusic(IConsole::IResult *pResult, void *pUserData);
+	static void ConMarioCap(IConsole::IResult *pResult, void *pUserData);
 
 	CMarioMesh m_MarioMeshes[MAX_CLIENTS];
 	uint8_t *m_MarioTexture;

@@ -14,9 +14,12 @@
 #include <game/mariocore.h>
 #include <game/client/gameclient.h>
 
+#define SEQUENCE_ARGS(priority, seqId) ((priority << 8) | seqId)
 extern "C" {
+	#include <decomp/include/sm64shared.h>
 	#include <decomp/include/audio_defines.h>
 	#include <decomp/include/surface_terrains.h>
+	#include <decomp/include/seq_ids.h>
 }
 
 using namespace std::chrono_literals;
@@ -70,6 +73,9 @@ static const char *MARIO_SHADER =
 void CMarios::OnConsoleInit()
 {
 	Console()->Register("mario", "", CFGFLAG_CLIENT, ConMario, this, "Toggle Mario");
+	Console()->Register("mario_kill", "", CFGFLAG_CLIENT, ConMarioKill, this, "Kills Mario instantly");
+	Console()->Register("mario_music", "i[ID]", CFGFLAG_CLIENT, ConMarioMusic, this, "Play SM64 music. Valid music IDs from 0 to 34. ID 0 stops music");
+	Console()->Register("mario_cap", "s[cap]", CFGFLAG_CLIENT, ConMarioCap, this, "Switches Mario's cap: off, on, wing, metal");
 }
 
 void CMarios::OnInit()
@@ -162,6 +168,25 @@ void CMarios::OnMapLoad()
 	sm64_static_surfaces_load(surfaces, surfaceCount);
 }
 
+void CMarios::OnStateChange(int NewState, int OldState)
+{
+	if (OldState == IClient::STATE_ONLINE)
+	{
+		// disconnected, destroy all marios
+		for (int i=0; i<MAX_CLIENTS; i++)
+		{
+			if (m_pClient->m_GameWorld.m_Core.m_apMarios[i])
+			{
+				delete m_pClient->m_GameWorld.m_Core.m_apMarios[i];
+				m_pClient->m_GameWorld.m_Core.m_apMarios[i] = 0;
+
+				CMarioMesh *mesh = &m_MarioMeshes[i];
+				Graphics()->destroyMario(mesh);
+			}
+		}
+	}
+}
+
 void CMarios::OnRender()
 {
 	int ID = m_pClient->m_Snap.m_LocalClientID;
@@ -207,7 +232,7 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 			return;
 		}
 
-		dbg_msg("libsm64", "Created Mario");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "libsm64", "Spawned Mario");
 
 		pSelf->m_pClient->m_GameWorld.m_Core.m_apMarios[ID] = mario;
 
@@ -223,6 +248,77 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 		CMarioMesh *mesh = &pSelf->m_MarioMeshes[ID];
 		pSelf->Graphics()->destroyMario(mesh);
 
-		dbg_msg("libsm64", "Deleted Mario");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "libsm64", "Deleted Mario");
 	}
+}
+
+void CMarios::ConMarioKill(IConsole::IResult *pResult, void *pUserData)
+{
+	CMarios *pSelf = (CMarios*)pUserData;
+	int ID = pSelf->m_pClient->m_Snap.m_LocalClientID;
+	CMarioCore *mario = pSelf->m_pClient->m_GameWorld.m_Core.m_apMarios[ID];
+
+	if (!mario)
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "libsm64", "Mario is not spawned");
+		return;
+	}
+
+	mario->state.health = 0xff;
+	sm64_mario_kill(mario->ID());
+}
+
+void CMarios::ConMarioMusic(IConsole::IResult *pResult, void *pUserData)
+{
+	CMarios *pSelf = (CMarios*)pUserData;
+	int ID = pResult->GetInteger(0);
+
+	if (ID < 0 || ID >= SEQ_COUNT)
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "libsm64", "Invalid music ID. Choose between ID 0 and 34");
+		return;
+	}
+
+	for (int i=0; i<SEQ_COUNT; i++)
+		sm64_stop_background_music(i);
+
+	if (ID != 0)
+		sm64_play_music(0, SEQUENCE_ARGS(0, ID), 0);
+}
+
+void CMarios::ConMarioCap(IConsole::IResult *pResult, void *pUserData)
+{
+	CMarios *pSelf = (CMarios*)pUserData;
+	int ID = pSelf->m_pClient->m_Snap.m_LocalClientID;
+	CMarioCore *mario = pSelf->m_pClient->m_GameWorld.m_Core.m_apMarios[ID];
+
+	if (!mario)
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "libsm64", "Mario is not spawned");
+		return;
+	}
+
+	struct {
+		const char *name;
+		uint32_t capFlag;
+	} caps[] = {
+		{"off", 0},
+		{"on", MARIO_NORMAL_CAP},
+		{"wing", MARIO_WING_CAP},
+		{"metal", MARIO_METAL_CAP}
+	};
+
+	for (int i=0; i<4; i++)
+	{
+		if (!str_comp_nocase(pResult->GetString(0), caps[i].name))
+		{
+			sm64_set_mario_state(mario->ID(), 0);
+			sm64_mario_interact_cap(mario->ID(), caps[i].capFlag, 65535, 0);
+			return;
+		}
+	}
+
+	char buf[128];
+	str_format(buf, sizeof(buf), "Invalid cap name \"%s\"", pResult->GetString(0));
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "libsm64", buf);
 }
