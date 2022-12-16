@@ -9,6 +9,9 @@
 
 // ------------------------------------
 
+typedef float VEC2[2];
+typedef float VEC3[3];
+
 template<typename T>
 class vector2_base
 {

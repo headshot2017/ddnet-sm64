@@ -527,7 +527,7 @@ public:
 	virtual void firstInitMario(uint32_t* shader, uint32_t* texture, uint8_t* marioTexture, const char *shaderCode) = 0;
 	virtual void initMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry) = 0;
 	virtual void destroyMario(CMarioMesh* mesh) = 0;
-	virtual void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, float* camPos, float* currPos, uint16_t* indices) = 0;
+	virtual void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, uint16_t* indices) = 0;
 
 protected:
 	inline CTextureHandle CreateTextureHandle(int Index)

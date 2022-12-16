@@ -2,10 +2,7 @@
 #define GAME_CLIENT_COMPONENTS_MARIOS_H
 #include <game/client/component.h>
 
-#include <GL/glew.h> // hacky
-
 #include <engine/client.h>
-#include <engine/client/backend/opengl/backend_opengl.h> // hacky
 #include <engine/console.h>
 
 #include <game/client/render.h>
@@ -21,6 +18,7 @@ public:
 	virtual int Sizeof() const override { return sizeof(*this); }
 	virtual void OnInit() override;
 	virtual void OnConsoleInit() override;
+	virtual void OnMapLoad() override;
 	virtual void OnRender() override;
 
 private:

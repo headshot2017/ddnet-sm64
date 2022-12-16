@@ -6,7 +6,6 @@
 
 #include <engine/client/backend_sdl.h>
 
-#include <base/cglm.h>
 #include <base/detect.h>
 
 #if defined(BACKEND_AS_OPENGL_ES) || !defined(CONF_BACKEND_OPENGL_ES)
@@ -2427,11 +2426,6 @@ void CCommandProcessorFragment_OpenGL2::Cmd_InitMario(const CCommandBuffer::SCom
 	#undef X
 
 	glBindVertexArray(0);
-
-	//GLenum err = glGetError();
-	//dbg_msg("glerror", "%d - %d %d %d %d %d %d %d", err, GL_INVALID_ENUM, GL_INVALID_VALUE, GL_INVALID_OPERATION, GL_INVALID_FRAMEBUFFER_OPERATION, GL_OUT_OF_MEMORY, GL_STACK_UNDERFLOW, GL_STACK_OVERFLOW);
-
-	dbg_msg("libsm64", "%d %d %d %d %d", mesh->position_buffer, mesh->normal_buffer, mesh->color_buffer, mesh->uv_buffer, mesh->vao);
 }
 
 void CCommandProcessorFragment_OpenGL2::Cmd_DestroyMario(const CCommandBuffer::SCommand_DestroyMario *pCommand)
@@ -2451,8 +2445,6 @@ void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandB
 	SM64MarioGeometryBuffers *geometry = pCommand->m_Geometry;
 	uint32_t *shader = pCommand->m_ShaderHandle;
 	uint32_t *texture = pCommand->m_TextureHandle;
-	float *camPos = pCommand->m_CamPos;
-	float *currPos = pCommand->m_CurrPos;
 	uint16_t *indices = pCommand->m_Indices;
 
 	glBindBuffer( GL_ARRAY_BUFFER, mesh->position_buffer );
@@ -2464,16 +2456,21 @@ void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandB
     glBindBuffer( GL_ARRAY_BUFFER, mesh->uv_buffer );
     glBufferData( GL_ARRAY_BUFFER, sizeof( VEC2 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->uv, GL_DYNAMIC_DRAW );
 
-	VEC3 up = {0,1,0};
+	GLfloat view[16], projection[16];
+	glGetFloatv(GL_PROJECTION_MATRIX, projection);
+	glGetFloatv(GL_MODELVIEW_MATRIX, view);
 
-	MAT4 view, projection;
-	glm_ortho(-512, 1600, -100, 900, 0.1f, 10000.f, projection);
-	//memset( view, 0, sizeof(mat4) );
-    glm_translate( view, camPos );
-    glm_lookat( camPos, currPos, up, view );
-	//memset( projection, 1, sizeof(mat4) );
+	// adjust farZ and nearZ in projection matrix to avoid mario model from getting clipped
+	float nearZ = -1000.f, farZ = 10000.f;
+	float fan = farZ + nearZ;
+	float fsn = farZ - nearZ;
+	projection[10] = -2.0f / fsn;
+	projection[14] = -fan / fsn;
 
-	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
 
 	glUseProgram(*shader);
 	glActiveTexture(GL_TEXTURE2);
@@ -2487,7 +2484,8 @@ void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandB
 	glUseProgram(0);
 	glBindVertexArray(0);
 
-	//glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
 }
 
 #undef BACKEND_GL_MODERN_API

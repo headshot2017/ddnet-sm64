@@ -4,7 +4,6 @@
 
 #include "marios.h"
 
-#include <base/cglm.h>
 #include <base/math.h>
 #include <base/system.h>
 #include <base/vmath.h>
@@ -17,6 +16,7 @@
 
 extern "C" {
 	#include <decomp/include/audio_defines.h>
+	#include <decomp/include/surface_terrains.h>
 }
 
 using namespace std::chrono_literals;
@@ -135,6 +135,33 @@ void CMarios::OnInit()
 	}
 }
 
+void CMarios::OnMapLoad()
+{
+	uint32_t surfaceCount = 2;
+	SM64Surface surfaces[surfaceCount];
+
+	for (uint32_t i=0; i<surfaceCount; i++)
+	{
+		surfaces[i].type = SURFACE_DEFAULT;
+		surfaces[i].force = 0;
+		surfaces[i].terrain = TERRAIN_STONE;
+	}
+	
+	int width = Collision()->GetWidth()/2 * 32 / (g_Config.m_MarioScale/100.f);
+	int spawnX = width;
+	int spawnY = (Collision()->GetHeight()+205) * 32 / (-g_Config.m_MarioScale/100.f);
+	
+	surfaces[surfaceCount-2].vertices[0][0] = spawnX + width + (400*32);	surfaces[surfaceCount-2].vertices[0][1] = spawnY;	surfaces[surfaceCount-2].vertices[0][2] = +128;
+	surfaces[surfaceCount-2].vertices[1][0] = spawnX - width - (400*32);	surfaces[surfaceCount-2].vertices[1][1] = spawnY;	surfaces[surfaceCount-2].vertices[1][2] = -128;
+	surfaces[surfaceCount-2].vertices[2][0] = spawnX - width - (400*32);	surfaces[surfaceCount-2].vertices[2][1] = spawnY;	surfaces[surfaceCount-2].vertices[2][2] = +128;
+
+	surfaces[surfaceCount-1].vertices[0][0] = spawnX - width - (400*32);	surfaces[surfaceCount-1].vertices[0][1] = spawnY;	surfaces[surfaceCount-1].vertices[0][2] = -128;
+	surfaces[surfaceCount-1].vertices[1][0] = spawnX + width + (400*32);	surfaces[surfaceCount-1].vertices[1][1] = spawnY;	surfaces[surfaceCount-1].vertices[1][2] = +128;
+	surfaces[surfaceCount-1].vertices[2][0] = spawnX + width + (400*32);	surfaces[surfaceCount-1].vertices[2][1] = spawnY;	surfaces[surfaceCount-1].vertices[2][2] = -128;
+
+	sm64_static_surfaces_load(surfaces, surfaceCount);
+}
+
 void CMarios::OnRender()
 {
 	int ID = m_pClient->m_Snap.m_LocalClientID;
@@ -156,10 +183,7 @@ void CMarios::OnRender()
 	mario->Tick(Client()->RenderFrameTime());
 
 	CMarioMesh *mesh = &m_MarioMeshes[ID];
-	float camPos[3] = {m_pClient->m_Camera.m_Center.x, m_pClient->m_Camera.m_Center.y, 0};
-	float currPos[3] = {mario->m_CurrPos.x, mario->m_CurrPos.y, 0};
-
-	Graphics()->updateAndRenderMario(mesh, &mario->geometry, &m_MarioShaderHandle, &m_MarioTexHandle, camPos, currPos, m_MarioIndices);
+	Graphics()->updateAndRenderMario(mesh, &mario->geometry, &m_MarioShaderHandle, &m_MarioTexHandle, m_MarioIndices);
 }
 
 void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
@@ -168,7 +192,7 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 	int ID = pSelf->m_pClient->m_Snap.m_LocalClientID;
 	if (!pSelf->m_pClient->m_aClients[ID].m_Active || pSelf->m_pClient->m_Snap.m_SpecInfo.m_Active)
 	{
-		dbg_msg("libsm64", "not active %d", ID);
+		dbg_msg("libsm64", "You must be in-game to spawn Mario");
 		return;
 	}
 
@@ -176,16 +200,20 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 	{
 		CMarioCore *mario = new CMarioCore;
 		mario->Init(&pSelf->m_pClient->m_GameWorld.m_Core, pSelf->Collision(), pSelf->m_pClient->m_LocalCharacterPos, g_Config.m_MarioScale/100.f);
+		if (!mario->Spawned())
+		{
+			dbg_msg("libsm64", "Failed to spawn Mario at position %.2f %.2f", pSelf->m_pClient->m_LocalCharacterPos.x/32, pSelf->m_pClient->m_LocalCharacterPos.y/32);
+			delete mario;
+			return;
+		}
+
+		dbg_msg("libsm64", "Created Mario");
+
 		pSelf->m_pClient->m_GameWorld.m_Core.m_apMarios[ID] = mario;
 
 		// create mario vertex
-
 		CMarioMesh *mesh = &pSelf->m_MarioMeshes[ID];
 		pSelf->Graphics()->initMario(mesh, &mario->geometry);
-
-		dbg_msg("libsm64", "%d %d %d %d %d", mesh->position_buffer, mesh->normal_buffer, mesh->color_buffer, mesh->uv_buffer, mesh->vao);
-
-		dbg_msg("libsm64", "create mario");
 	}
 	else
 	{
@@ -195,6 +223,6 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 		CMarioMesh *mesh = &pSelf->m_MarioMeshes[ID];
 		pSelf->Graphics()->destroyMario(mesh);
 
-		dbg_msg("libsm64", "delete mario");
+		dbg_msg("libsm64", "Deleted Mario");
 	}
 }
