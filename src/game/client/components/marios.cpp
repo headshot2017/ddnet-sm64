@@ -207,6 +207,52 @@ void CMarios::OnRender()
 
 	mario->Tick(Client()->RenderFrameTime());
 
+	if (g_Config.m_MarioCustomColors)
+	{
+		ColorRGBA bodyColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClPlayerColorBody).UnclampLighting());
+		ColorRGBA feetColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClPlayerColorFeet).UnclampLighting());
+		for (int i=0; i<mario->geometry.numTrianglesUsed; i++)
+		{
+			uint8_t r = mario->geometry.color[i*9+0]*255;
+			uint8_t g = mario->geometry.color[i*9+1]*255;
+			uint8_t b = mario->geometry.color[i*9+2]*255;
+			float r2 = 0, g2 = 0, b2 = 0;
+			bool changed = false;
+
+			if (r == 0 && g == 0 && b == 255) // overalls / pants
+			{
+				changed = true;
+				r2 = bodyColor.r / 2;
+				g2 = bodyColor.g / 2;
+				b2 = bodyColor.b / 2;
+			}
+			else if (r == 255 && g == 0 && b == 0) // shirt / hat
+			{
+				changed = true;
+				r2 = bodyColor.r;
+				g2 = bodyColor.g;
+				b2 = bodyColor.b;
+			}
+			else if (r == 114 && g == 28 && b == 14) // shoes
+			{
+				changed = true;
+				r2 = feetColor.r;
+				g2 = feetColor.g;
+				b2 = feetColor.b;
+			}
+
+			if (changed)
+			{
+				for (int j=0; j<3; j++)
+				{
+					mario->geometry.color[i*9 + j*3 + 0] = r2;
+					mario->geometry.color[i*9 + j*3 + 1] = g2;
+					mario->geometry.color[i*9 + j*3 + 2] = b2;
+				}
+			}
+		}
+	}
+
 	CMarioMesh *mesh = &m_MarioMeshes[ID];
 	Graphics()->updateAndRenderMario(mesh, &mario->geometry, &m_MarioShaderHandle, &m_MarioTexHandle, m_MarioIndices);
 }
