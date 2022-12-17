@@ -167,7 +167,12 @@ void CCamera::OnRender()
 		else if (!m_pClient->m_GameWorld.m_Core.m_apMarios[m_pClient->m_Snap.m_LocalClientID])
 			m_Center = m_pClient->m_LocalCharacterPos + s_aCurrentCameraOffset[g_Config.m_ClDummy];
 		else
+		{
+			CMarioCore *mario = m_pClient->m_GameWorld.m_Core.m_apMarios[m_pClient->m_Snap.m_LocalClientID];
+			float scale = mario->Scale() * (g_Config.m_MarioDrawScale/100.f);
 			m_Center = m_pClient->m_GameWorld.m_Core.m_apMarios[m_pClient->m_Snap.m_LocalClientID]->m_Pos + s_aCurrentCameraOffset[g_Config.m_ClDummy];
+			m_Center.y -= 64 * scale;
+		}
 	}
 
 	if(m_ForceFreeviewPos != vec2(-1, -1) && m_CamType == CAMTYPE_SPEC)
