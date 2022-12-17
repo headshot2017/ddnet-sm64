@@ -124,7 +124,7 @@ MACRO_CONFIG_STR(ClSkinPrefix, cl_skin_prefix, 12, "", CFGFLAG_CLIENT | CFGFLAG_
 MACRO_CONFIG_INT(ClFatSkins, cl_fat_skins, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable fat skins")
 
 MACRO_CONFIG_INT(UiPage, ui_page, 9, 6, 10, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface page")
-MACRO_CONFIG_INT(UiSettingsPage, ui_settings_page, 0, 0, 9, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface settings page")
+MACRO_CONFIG_INT(UiSettingsPage, ui_settings_page, 0, 0, 10, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface settings page")
 MACRO_CONFIG_INT(UiToolboxPage, ui_toolbox_page, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Toolbox page")
 MACRO_CONFIG_STR(UiServerAddress, ui_server_address, 1024, "localhost:8303", CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_INSENSITIVE, "Interface server address")
 MACRO_CONFIG_INT(UiMousesens, ui_mousesens, 200, 1, 100000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Mouse sensitivity for menus/editor")
@@ -203,10 +203,11 @@ MACRO_CONFIG_INT(SvPractice, sv_practice, 1, 0, 1, CFGFLAG_SERVER, "Enable pract
 
 // headbot
 MACRO_CONFIG_INT(SvDDNet9Timer, sv_ddnet9_timer, 1, 0, 1, CFGFLAG_SERVER, "Use the old DDNet9-style timer which allows you to manipulate envelopes and sounds with the game/race timer")
-MACRO_CONFIG_INT(MarioInvincible, mario_invincible, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Whether Mario can't take damage")
-MACRO_CONFIG_INT(MarioScale, mario_scale, 75, 50, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Set Mario's scale. Only applies when (re)spawning Mario")
-MACRO_CONFIG_INT(MarioDrawScale, mario_draw_scale, 100, 50, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Set Mario's drawing scale. Relative to mario_scale")
 MACRO_CONFIG_INT(MarioDrawMode, mario_draw_mode, 1, 0, 2, CFGFLAG_SERVER, "Set Mario draw mode. 0: vertices, 1: quickhull, 2: ConvexHull")
+MACRO_CONFIG_INT(MarioInvincible, mario_invincible, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Whether Mario can't take damage")
+MACRO_CONFIG_INT(MarioScale, mario_scale, 75, 1, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Set Mario's scale. Only applies when (re)spawning Mario")
+MACRO_CONFIG_INT(MarioDrawScale, mario_draw_scale, 100, 50, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Set Mario's drawing scale. Relative to mario_scale")
+MACRO_CONFIG_INT(MarioCustomColors, mario_custom_colors, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Mario custom colors mode: 0 = off, 1 = tee colors")
 
 MACRO_CONFIG_INT(ClVideoPauseWithDemo, cl_video_pausewithdemo, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Pause video rendering when demo playing pause")
 MACRO_CONFIG_INT(ClVideoShowhud, cl_video_showhud, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD when rendering video")

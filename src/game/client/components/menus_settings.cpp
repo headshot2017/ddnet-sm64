@@ -2031,7 +2031,8 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Graphics"),
 		Localize("Sound"),
 		Localize("DDNet"),
-		Localize("Assets")};
+		Localize("Assets"),
+		"Mario"};
 	static CButtonContainer s_aTabButtons[sizeof(apTabs)];
 
 	int NumTabs = (int)std::size(apTabs);
@@ -2099,6 +2100,11 @@ void CMenus::RenderSettings(CUIRect MainView)
 	{
 		m_pBackground->ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
 		RenderSettingsCustom(MainView);
+	}
+	else if(g_Config.m_UiSettingsPage == SETTINGS_MARIO)
+	{
+		m_pBackground->ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
+		RenderSettingsMario(MainView);
 	}
 
 	if(m_NeedRestartUpdate)
@@ -3046,6 +3052,37 @@ void CMenus::RenderSettingsAppearance(CUIRect MainView)
 		Section.Margin(SectionMargin, &Section);
 		DoLaserPreview(&Section, LaserFreezeOutlineColor, LaserFreezeInnerColor, LASERTYPE_DOOR);
 	}
+}
+
+void CMenus::RenderSettingsMario(CUIRect MainView)
+{
+	CUIRect Button, PoweredBy;
+	char aBuf[64];
+
+	MainView.HSplitBottom(15.0f, &MainView, &PoweredBy);
+	UI()->DoLabel(&PoweredBy, "Powered by libsm64", 10.0f, TEXTALIGN_LEFT);
+
+	MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_MarioCustomColors, "Use your Tee's custom colors on Mario's outfit", g_Config.m_MarioCustomColors, &Button))
+	{
+		g_Config.m_MarioCustomColors ^= 1;
+	}
+
+	MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_MarioInvincible, "Mario is invincible", g_Config.m_MarioInvincible, &Button))
+	{
+		g_Config.m_MarioInvincible ^= 1;
+	}
+
+	static float s_Offset = 0.0f;
+
+	MainView.HSplitTop(5.0f, &Button, &MainView);
+	MainView.HSplitTop(20.0f, &Button, &MainView);
+	UI()->DoLabel(&Button, "Mario draw scale percentage", 14.0f, TEXTALIGN_LEFT);
+	Button.VSplitLeft(225.0f, 0, &Button);
+	str_format(aBuf, sizeof(aBuf), "%d", g_Config.m_MarioDrawScale);
+	UI()->DoEditBox(&g_Config.m_MarioDrawScale, &Button, aBuf, sizeof(aBuf), 14.0f, &s_Offset);
+	g_Config.m_MarioDrawScale = maximum(1, str_toint(aBuf));
 }
 
 void CMenus::RenderSettingsDDNet(CUIRect MainView)
