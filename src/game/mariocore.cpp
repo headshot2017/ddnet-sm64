@@ -96,6 +96,7 @@ void CMarioCore::Tick(float tickspeed)
 
 		sm64_reset_mario_z(marioId);
 		if (state.health != MARIO_DEAD_HEALTH && g_Config.m_MarioInvincible) sm64_mario_set_health(marioId, MARIO_FULL_HEALTH);
+		if (state.action & ACT_FLAG_SWIMMING_OR_FLYING) input.stickX *= -1;
 		sm64_mario_tick(marioId, &input, &state, &geometry);
 
 		vec2 newPos(state.position[0]*m_Scale, -state.position[1]*m_Scale);
