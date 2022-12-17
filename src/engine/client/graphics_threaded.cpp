@@ -3301,11 +3301,12 @@ void CGraphics_Threaded::destroyMario(CMarioMesh* mesh)
 	WaitForIdle();
 }
 
-void CGraphics_Threaded::updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, uint16_t* indices)
+void CGraphics_Threaded::updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t capFlag, uint32_t* shader, uint32_t* texture, uint16_t* indices)
 {
 	CCommandBuffer::SCommand_UpdateAndRenderMario Cmd;
 	Cmd.m_Mesh = mesh;
 	Cmd.m_Geometry = geometry;
+	Cmd.m_CapFlag = capFlag;
 	Cmd.m_ShaderHandle = shader;
 	Cmd.m_TextureHandle = texture;
 	Cmd.m_Indices = indices;

@@ -671,6 +671,7 @@ public:
 
 		CMarioMesh *m_Mesh;
 		SM64MarioGeometryBuffers *m_Geometry;
+		uint32_t m_CapFlag;
 		uint32_t *m_ShaderHandle;
 		uint32_t *m_TextureHandle;
 		uint16_t *m_Indices;
@@ -821,7 +822,7 @@ public:
 	virtual void firstInitMario(uint32_t* shader, uint32_t* texture, uint8_t* marioTexture, const char *shaderCode) {}
 	virtual void initMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry) {}
 	virtual void destroyMario(CMarioMesh* mesh) {}
-	virtual void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, uint16_t* indices) {}
+	virtual void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t capFlag, uint32_t* shader, uint32_t* texture, uint16_t* indices) {}
 };
 
 class CGraphics_Threaded : public IEngineGraphics
@@ -1368,7 +1369,7 @@ public:
 	void firstInitMario(uint32_t* shader, uint32_t* texture, uint8_t* marioTexture, const char *shaderCode) override;
 	void initMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry) override;
 	void destroyMario(CMarioMesh* mesh) override;
-	void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t* shader, uint32_t* texture, uint16_t* indices) override;
+	void updateAndRenderMario(CMarioMesh* mesh, SM64MarioGeometryBuffers* geometry, uint32_t capFlag, uint32_t* shader, uint32_t* texture, uint16_t* indices) override;
 };
 
 extern IGraphicsBackend *CreateGraphicsBackend();

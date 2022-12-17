@@ -33,6 +33,10 @@
 #endif
 #endif
 
+extern "C" {
+	#include <decomp/include/sm64shared.h>
+}
+
 // ------------ CCommandProcessorFragment_OpenGL
 void CCommandProcessorFragment_OpenGL::Cmd_Update_Viewport(const CCommandBuffer::SCommand_Update_Viewport *pCommand)
 {
@@ -2443,6 +2447,7 @@ void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandB
 {
 	CMarioMesh *mesh = pCommand->m_Mesh;
 	SM64MarioGeometryBuffers *geometry = pCommand->m_Geometry;
+	uint32_t cap = pCommand->m_CapFlag;
 	uint32_t *shader = pCommand->m_ShaderHandle;
 	uint32_t *texture = pCommand->m_TextureHandle;
 	uint16_t *indices = pCommand->m_Indices;
@@ -2467,24 +2472,31 @@ void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandB
 	projection[10] = -2.0f / fsn;
 	projection[14] = -fan / fsn;
 
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 
 	glUseProgram(*shader);
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, *texture);
     glBindVertexArray(mesh->vao);
 	glUniformMatrix4fv(glGetUniformLocation(*shader, "view"), 1, GL_FALSE, (GLfloat*)view);
 	glUniformMatrix4fv(glGetUniformLocation(*shader, "projection"), 1, GL_FALSE, (GLfloat*)projection);
-	glUniform1i(glGetUniformLocation(*shader, "marioTex"), 2);
-    glDrawElements(GL_TRIANGLES, geometry->numTrianglesUsed*3, GL_UNSIGNED_SHORT, indices);
-	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(*shader, "marioTex"), 0);
+
+	uint32_t triangleSize = geometry->numTrianglesUsed*3;
+	if (cap & MARIO_WING_CAP)
+	{
+		// skip the white rectangles from the wings (hacky solution because glBlend stuff does nothing)
+		triangleSize = geometry->numTrianglesUsed*3-24;
+		glUniform1i(glGetUniformLocation(*shader, "wingCap"), 1);
+		glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, indices + triangleSize);
+	}
+	glUniform1i(glGetUniformLocation(*shader, "wingCap"), 0);
+
+    glDrawElements(GL_TRIANGLES, triangleSize, GL_UNSIGNED_SHORT, indices);
 	glUseProgram(0);
 	glBindVertexArray(0);
 
-	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 }
 

@@ -28,6 +28,7 @@ static const char *MARIO_SHADER =
 "\n uniform mat4 view;"
 "\n uniform mat4 projection;"
 "\n uniform sampler2D marioTex;"
+"\n uniform int wingCap;"
 "\n "
 "\n v2f vec3 v_color;"
 "\n v2f vec3 v_normal;"
@@ -60,6 +61,7 @@ static const char *MARIO_SHADER =
 "\n     {"
 "\n         float light = .5 + .5 * clamp( dot( v_normal, v_light ), 0., 1. );"
 "\n         vec4 texColor = texture2D( marioTex, v_uv );"
+"\n         if (wingCap == 1 && texColor.a != 1) discard;"
 "\n         vec3 mainColor = mix( v_color, texColor.rgb, texColor.a ); // v_uv.x >= 0. ? texColor.a : 0. );"
 "\n         color = vec4( mainColor * light, 1 );"
 "\n     }"
@@ -254,7 +256,7 @@ void CMarios::OnRender()
 	}
 
 	CMarioMesh *mesh = &m_MarioMeshes[ID];
-	Graphics()->updateAndRenderMario(mesh, &mario->geometry, &m_MarioShaderHandle, &m_MarioTexHandle, m_MarioIndices);
+	Graphics()->updateAndRenderMario(mesh, &mario->geometry, mario->state.flags, &m_MarioShaderHandle, &m_MarioTexHandle, m_MarioIndices);
 }
 
 void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
