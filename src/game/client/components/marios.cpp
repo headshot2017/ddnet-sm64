@@ -76,9 +76,6 @@ static const char *MARIO_SHADER =
 "\n #endif";
 
 
-
-// idea: move all these to their own engine/graphics functions
-
 void CMarios::OnConsoleInit()
 {
 	Console()->Register("mario", "", CFGFLAG_CLIENT, ConMario, this, "Toggle Mario");
