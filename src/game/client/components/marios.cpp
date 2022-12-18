@@ -199,9 +199,8 @@ void CMarios::TickAndRenderMario(int ID)
 
 	if (ID == m_pClient->m_Snap.m_LocalClientID)
 	{
-		//CNetObj_PlayerInput *input = (CNetObj_PlayerInput *)Client()->GetInput(Client()->GameTick(g_Config.m_ClDummy), g_Config.m_ClDummy);
 		CNetObj_PlayerInput *input = &GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy];
-		mario->input.stickX = GameClient()->m_Controls.m_aInputDirectionLeft[g_Config.m_ClDummy] ? 1 : GameClient()->m_Controls.m_aInputDirectionRight[g_Config.m_ClDummy] ? -1 : 0;
+		mario->input.stickX = -input->m_Direction;
 		mario->input.stickY = 0;
 		mario->input.buttonA = input->m_Jump;
 		mario->input.buttonB = input->m_Fire & 1;

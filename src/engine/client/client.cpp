@@ -14,6 +14,7 @@
 
 #include <engine/external/json-parser/json.h>
 
+#include <game/client/gameclient.h>
 #include <game/client/components/menus.h>
 #include <game/generated/protocol.h>
 
@@ -566,6 +567,8 @@ void CClient::SendInput()
 		int i = g_Config.m_ClDummy ^ Dummy;
 		int Size = GameClient()->OnSnapInput(m_aInputs[i][m_aCurrentInput[i]].m_aData, Dummy, Force);
 
+		CGameClient *gameclient = (CGameClient*)GameClient();
+
 		if(Size)
 		{
 			// pack input
@@ -581,7 +584,12 @@ void CClient::SendInput()
 
 			// pack it
 			for(int k = 0; k < Size / 4; k++)
-				Msg.AddInt(m_aInputs[i][m_aCurrentInput[i]].m_aData[k]);
+			{
+				if (!gameclient->m_GameWorld.m_Core.m_apMarios[gameclient->m_Snap.m_LocalClientID])
+					Msg.AddInt(m_aInputs[i][m_aCurrentInput[i]].m_aData[k]);
+				else
+					Msg.AddInt((k == 6) ? m_aInputs[i][m_aCurrentInput[i]].m_aData[k] : 0); // 6 is playerflags
+			}
 
 			m_aCurrentInput[i]++;
 			m_aCurrentInput[i] %= 200;
