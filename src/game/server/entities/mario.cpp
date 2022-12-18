@@ -12,6 +12,11 @@
 #include "../quickhull/QuickHull.hpp"
 #include "../ConvexHull/ConvexHull.h"
 
+extern "C" {
+	#include <decomp/include/sm64shared.h>
+	#include <decomp/include/audio_defines.h>
+}
+
 CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld, CGameWorld::ENTTYPE_MARIO, Pos)
 {
 	GameWorld()->InsertEntity(this);
@@ -86,6 +91,32 @@ void CMario::Tick()
 	m_Core.input.buttonA = character->GetLatestInput()->m_Jump;
 	m_Core.input.buttonB = character->GetLatestInput()->m_Fire & 1;
 	m_Core.input.buttonZ = character->GetLatestInput()->m_Hook;
+
+	if (g_Config.m_MarioAttackTees)
+	{
+		for (int i=0; i<MAX_CLIENTS; i++)
+		{
+			CCharacter *Char = GameServer()->GetPlayerChar(i);
+			if (!Char || i == m_Owner) continue;
+
+			float dist = distance(Char->m_Pos, m_Core.m_Pos);
+			if (dist < 48 && sm64_mario_attack(m_Core.ID(), Char->m_Pos.x/m_Core.Scale(), Char->m_Pos.y/-m_Core.Scale(), 0, 0))
+			{
+				// tee attacked
+				if (m_Core.state.action == ACT_GROUND_POUND)
+				{
+					sm64_set_mario_action(m_Core.ID(), ACT_TRIPLE_JUMP);
+					sm64_play_sound_global(SOUND_ACTION_HIT);
+
+					GameServer()->CreateDamageInd(Char->m_Pos, -atan2(0, 1), 5);
+				}
+				else
+					GameServer()->CreateDamageInd(Char->m_Pos, -atan2(0, 1), 1);
+
+				GameServer()->CreateHammerHit(Char->m_Pos);
+			}
+		}
+	}
 
 	m_Core.Tick(1.f/Server()->TickSpeed());
 

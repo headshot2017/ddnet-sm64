@@ -3074,6 +3074,12 @@ void CMenus::RenderSettingsMario(CUIRect MainView)
 		g_Config.m_MarioInvincible ^= 1;
 	}
 
+	MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_MarioAttackTees, "Mario can attack tees", g_Config.m_MarioAttackTees, &Button))
+	{
+		g_Config.m_MarioAttackTees ^= 1;
+	}
+
 	static float s_Offset = 0.0f;
 
 	MainView.HSplitTop(5.0f, &Button, &MainView);
@@ -3143,8 +3149,6 @@ void CMenus::RenderSettingsMario(CUIRect MainView)
 			Item.m_Rect.VSplitLeft(Item.m_Rect.h * 2.0f, &Rect, &Item.m_Rect);
 			Rect.VMargin(6.0f, &Rect);
 			Rect.HMargin(3.0f, &Rect);
-			//ColorRGBA Color(1.0f, 1.0f, 1.0f, 1.0f);
-			//m_pClient->m_CountryFlags.Render(Language.m_CountryCode, &Color, Rect.x, Rect.y, Rect.w, Rect.h);
 			Item.m_Rect.HSplitTop(2.0f, 0, &Item.m_Rect);
 			UI()->DoLabel(&Item.m_Rect, s_musicIDs[i].c_str(), 16.0f, TEXTALIGN_LEFT);
 		}

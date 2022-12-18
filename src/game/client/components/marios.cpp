@@ -211,6 +211,34 @@ void CMarios::OnRender()
 	mario->input.buttonB = input->m_Fire & 1;
 	mario->input.buttonZ = input->m_Hook;
 
+	if (g_Config.m_MarioAttackTees)
+	{
+		for (int i=0; i<MAX_CLIENTS; i++)
+		{
+			CCharacterCore *Char = m_pClient->m_GameWorld.m_Core.m_apCharacters[i];
+			if (!Char) continue;
+
+			float dist = distance(Char->m_Pos, mario->m_Pos);
+			if (dist < 48 && sm64_mario_attack(mario->ID(), Char->m_Pos.x/mario->Scale(), Char->m_Pos.y/-mario->Scale(), 0, 0))
+			{
+				// tee attacked
+				if (mario->state.action == ACT_GROUND_POUND)
+				{
+					sm64_set_mario_action(mario->ID(), ACT_TRIPLE_JUMP);
+					sm64_play_sound_global(SOUND_ACTION_HIT);
+
+					for (int j=-2; j<=2; j++)
+					{
+						float angle = (90 + (20 * j)) / 180.f * pi;
+						m_pClient->m_Effects.DamageIndicator(Char->m_Pos, vec2(cos(angle), -sin(angle)));
+					}
+				}
+				else
+					m_pClient->m_Effects.DamageIndicator(Char->m_Pos, vec2(0, -1));
+			}
+		}
+	}
+
 	mario->Tick(Client()->RenderFrameTime());
 
 	if (g_Config.m_MarioCustomColors)
