@@ -1565,7 +1565,9 @@ void CHud::OnRender()
 		if(g_Config.m_ClShowRecord)
 			RenderRecord();
 	}
-	RenderCursor();
+
+	if (!m_pClient->m_GameWorld.m_Core.m_apMarios[m_pClient->m_Snap.m_LocalClientID])
+		RenderCursor(); // only render cursor / crosshair / reticle when Mario is not spawned
 }
 
 void CHud::OnMessage(int MsgType, void *pRawMsg)
