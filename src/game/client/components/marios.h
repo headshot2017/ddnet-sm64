@@ -22,6 +22,8 @@ public:
 	virtual void OnStateChange(int NewState, int OldState) override;
 	virtual void OnRender() override;
 
+	void TickAndRenderMario(int ID);
+
 private:
 	static void ConMario(IConsole::IResult *pResult, void *pUserData);
 	static void ConMarioKill(IConsole::IResult *pResult, void *pUserData);

@@ -193,23 +193,20 @@ void CMarios::OnStateChange(int NewState, int OldState)
 	}
 }
 
-void CMarios::OnRender()
+void CMarios::TickAndRenderMario(int ID)
 {
-	int ID = m_pClient->m_Snap.m_LocalClientID;
 	CMarioCore *mario = m_pClient->m_GameWorld.m_Core.m_apMarios[ID];
 
-	if (!m_pClient->m_aClients[ID].m_Active || m_pClient->m_Snap.m_SpecInfo.m_Active || !mario)
+	if (ID == m_pClient->m_Snap.m_LocalClientID)
 	{
-		return;
+		//CNetObj_PlayerInput *input = (CNetObj_PlayerInput *)Client()->GetInput(Client()->GameTick(g_Config.m_ClDummy), g_Config.m_ClDummy);
+		CNetObj_PlayerInput *input = &GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy];
+		mario->input.stickX = GameClient()->m_Controls.m_aInputDirectionLeft[g_Config.m_ClDummy] ? 1 : GameClient()->m_Controls.m_aInputDirectionRight[g_Config.m_ClDummy] ? -1 : 0;
+		mario->input.stickY = 0;
+		mario->input.buttonA = input->m_Jump;
+		mario->input.buttonB = input->m_Fire & 1;
+		mario->input.buttonZ = input->m_Hook;
 	}
-
-	//CNetObj_PlayerInput *input = (CNetObj_PlayerInput *)Client()->GetInput(Client()->GameTick(g_Config.m_ClDummy), g_Config.m_ClDummy);
-	CNetObj_PlayerInput *input = &GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy];
-	mario->input.stickX = GameClient()->m_Controls.m_aInputDirectionLeft[g_Config.m_ClDummy] ? 1 : GameClient()->m_Controls.m_aInputDirectionRight[g_Config.m_ClDummy] ? -1 : 0;
-	mario->input.stickY = 0;
-	mario->input.buttonA = input->m_Jump;
-	mario->input.buttonB = input->m_Fire & 1;
-	mario->input.buttonZ = input->m_Hook;
 
 	if (g_Config.m_MarioAttackTees)
 	{
@@ -303,6 +300,16 @@ void CMarios::OnRender()
 	CMarioMesh *mesh = &m_MarioMeshes[ID];
 	if (mario->geometry.numTrianglesUsed)
 		Graphics()->updateAndRenderMario(mesh, &mario->geometry, mario->state.flags, &m_MarioShaderHandle, &m_MarioTexHandle, m_MarioIndices);
+}
+
+void CMarios::OnRender()
+{
+	for (int i=0; i<MAX_CLIENTS; i++)
+	{
+		CMarioCore *mario = m_pClient->m_GameWorld.m_Core.m_apMarios[i];
+		if (!mario) continue;
+		TickAndRenderMario(i);
+	}
 }
 
 void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
