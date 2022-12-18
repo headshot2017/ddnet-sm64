@@ -37,8 +37,12 @@ using namespace std::chrono_literals;
 
 void CMenus::RenderGame(CUIRect MainView)
 {
-	CUIRect Button, ButtonBar, ButtonBar2;
-	MainView.HSplitTop(45.0f, &ButtonBar, &MainView);
+	CMarioCore *mario = (m_pClient->m_Snap.m_LocalClientID >= 0) ? m_pClient->m_GameWorld.m_Core.m_apMarios[m_pClient->m_Snap.m_LocalClientID] : 0;
+
+	CUIRect Button, ButtonBar, ButtonBar2, ButtonBar3;
+	CUIRect MainView2 = MainView;
+
+	MainView.HSplitTop((mario) ? 80 : 45, &ButtonBar, &MainView);
 	ButtonBar.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 
 	// button bar
@@ -216,6 +220,61 @@ void CMenus::RenderGame(CUIRect MainView)
 		if(DoButton_Menu(&s_MarioButton, "Mario", 0, &Button))
 		{
 			m_pClient->Console()->ExecuteLine("mario");
+			SetActive(false);
+		}
+	}
+
+	if (mario)
+	{
+		static CButtonContainer s_KillMarioButton;
+		static CButtonContainer s_NoCapButton;
+		static CButtonContainer s_NormalCapButton;
+		static CButtonContainer s_WingCapButton;
+		static CButtonContainer s_MetalCapButton;
+
+		MainView2.HSplitTop(45, &ButtonBar3, &MainView2);
+
+		ButtonBar3.HSplitTop(45.0f, 0, &ButtonBar3);
+		ButtonBar3.HSplitTop(24.0f, &ButtonBar3, 0);
+		ButtonBar3.VMargin(10.0f, &ButtonBar3);
+
+		ButtonBar3.VSplitLeft(5.0f, 0, &ButtonBar3);
+		ButtonBar3.VSplitLeft(85.0f, &Button, &ButtonBar3);
+		if(DoButton_Menu(&s_KillMarioButton, "Kill Mario", 0, &Button))
+		{
+			m_pClient->Console()->ExecuteLine("mario_kill");
+			SetActive(false);
+		}
+
+		ButtonBar3.VSplitLeft(5.0f, 0, &ButtonBar3);
+		ButtonBar3.VSplitLeft(85.0f, &Button, &ButtonBar3);
+		if(DoButton_Menu(&s_NoCapButton, "No cap", 0, &Button))
+		{
+			m_pClient->Console()->ExecuteLine("mario_cap off");
+			SetActive(false);
+		}
+
+		ButtonBar3.VSplitLeft(5.0f, 0, &ButtonBar3);
+		ButtonBar3.VSplitLeft(100.0f, &Button, &ButtonBar3);
+		if(DoButton_Menu(&s_NormalCapButton, "Normal cap", 0, &Button))
+		{
+			m_pClient->Console()->ExecuteLine("mario_cap on");
+			SetActive(false);
+		}
+
+		ButtonBar3.VSplitLeft(5.0f, 0, &ButtonBar3);
+		ButtonBar3.VSplitLeft(85.0f, &Button, &ButtonBar3);
+		if(DoButton_Menu(&s_WingCapButton, "Wing cap", 0, &Button))
+		{
+			m_pClient->Console()->ExecuteLine("mario_cap wing");
+			SetActive(false);
+		}
+
+		ButtonBar3.VSplitLeft(5.0f, 0, &ButtonBar3);
+		ButtonBar3.VSplitLeft(85.0f, &Button, &ButtonBar3);
+		if(DoButton_Menu(&s_MetalCapButton, "Metal cap", 0, &Button))
+		{
+			m_pClient->Console()->ExecuteLine("mario_cap metal");
 			SetActive(false);
 		}
 	}
