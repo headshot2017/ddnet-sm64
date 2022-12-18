@@ -2492,6 +2492,7 @@ void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandB
 		glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, indices + triangleSize);
 	}
 	glUniform1i(glGetUniformLocation(*shader, "wingCap"), 0);
+	glUniform1i(glGetUniformLocation(*shader, "metalCap"), (cap & MARIO_METAL_CAP) ? 1 : 0);
 
     glDrawElements(GL_TRIANGLES, triangleSize, GL_UNSIGNED_SHORT, indices);
 	glUseProgram(0);

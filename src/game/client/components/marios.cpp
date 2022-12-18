@@ -29,6 +29,7 @@ static const char *MARIO_SHADER =
 "\n uniform mat4 projection;"
 "\n uniform sampler2D marioTex;"
 "\n uniform int wingCap;"
+"\n uniform int metalCap;"
 "\n "
 "\n v2f vec3 v_color;"
 "\n v2f vec3 v_normal;"
@@ -60,8 +61,14 @@ static const char *MARIO_SHADER =
 "\n     void main() "
 "\n     {"
 "\n         float light = .5 + .5 * clamp( dot( v_normal, v_light ), 0., 1. );"
-"\n         vec4 texColor = texture2D( marioTex, v_uv );"
-"\n         if (wingCap == 1 && texColor.a != 1) discard;"
+"\n         vec4 texColor = vec4(0);"
+"\n         if (wingCap == 0 && metalCap == 0) texColor = texture2D(marioTex, v_uv);"
+"\n         else if (wingCap == 1)"
+"\n         {"
+"\n             texColor = texture2D(marioTex, v_uv);"
+"\n             if (texColor.a != 1) discard;"
+"\n         }"
+"\n         else if (metalCap == 1) texColor = texture2D(marioTex, v_uv); // NEED A WAY TO MAKE REFLECTION"
 "\n         vec3 mainColor = mix( v_color, texColor.rgb, texColor.a ); // v_uv.x >= 0. ? texColor.a : 0. );"
 "\n         color = vec4( mainColor * light, 1 );"
 "\n     }"
@@ -215,6 +222,16 @@ void CMarios::OnRender()
 		ColorRGBA feetColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClPlayerColorFeet).UnclampLighting());
 		for (int i=0; i<mario->geometry.numTrianglesUsed; i++)
 		{
+			if (mario->state.flags & MARIO_METAL_CAP)
+			{
+				/*
+				mario->geometry.uv[i*6+0] = 0;
+				mario->geometry.uv[i*6+1] = 0.09090909090909091f;
+				mario->geometry.uv[i*6+2] = 0.09090909090909091f;
+				mario->geometry.uv[i*6+3] = 0;
+				*/
+				for (int j=0; j<9; j++) mario->geometry.color[i*9+j] = 0; // needs fix
+			}
 			uint8_t r = mario->geometry.color[i*9+0]*255;
 			uint8_t g = mario->geometry.color[i*9+1]*255;
 			uint8_t b = mario->geometry.color[i*9+2]*255;
