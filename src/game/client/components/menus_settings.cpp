@@ -3083,6 +3083,81 @@ void CMenus::RenderSettingsMario(CUIRect MainView)
 	str_format(aBuf, sizeof(aBuf), "%d", g_Config.m_MarioDrawScale);
 	UI()->DoEditBox(&g_Config.m_MarioDrawScale, &Button, aBuf, sizeof(aBuf), 14.0f, &s_Offset);
 	g_Config.m_MarioDrawScale = maximum(1, str_toint(aBuf));
+
+	MainView.HSplitTop(20.0f, &Button, &MainView);
+	MainView.HSplitTop(20.0f, &Button, &MainView);
+	UI()->DoLabel(&Button, "SM64 Music", 14.0f, TEXTALIGN_LEFT);
+	static std::vector<std::string> s_musicIDs;
+	static int s_SelectedMusic = 0;
+	static float s_ScrollValue = 0;
+	if (s_musicIDs.empty())
+	{
+		// decomp/include/seq_ids.h
+		s_musicIDs.push_back("Stop music");
+		s_musicIDs.push_back("Star Catch Fanfare");
+		s_musicIDs.push_back("Title Screen");
+		s_musicIDs.push_back("Bob-omb Battlefield");
+		s_musicIDs.push_back("Inside the Castle Walls");
+		s_musicIDs.push_back("Jolly Roger Bay / Dire, Dire Docks");
+		s_musicIDs.push_back("Shifting Sand Land");
+		s_musicIDs.push_back("Koopa's Theme");
+		s_musicIDs.push_back("Cool, Cool Mountain / Snowman's Land");
+		s_musicIDs.push_back("Slider");
+		s_musicIDs.push_back("Big Boo's Haunt");
+		s_musicIDs.push_back("Piranha Plant's Lullaby");
+		s_musicIDs.push_back("Hazy Maze Cave");
+		s_musicIDs.push_back("Star Select");
+		s_musicIDs.push_back("Wing Cap / Vanish Cap");
+		s_musicIDs.push_back("Metal Mario");
+		s_musicIDs.push_back("Koopa's Message");
+		s_musicIDs.push_back("Koopa's Road");
+		s_musicIDs.push_back("High Score");
+		s_musicIDs.push_back("Merry-Go-Round");
+		s_musicIDs.push_back("Race Fanfare");
+		s_musicIDs.push_back("Power Star");
+		s_musicIDs.push_back("Stage Boss");
+		s_musicIDs.push_back("Koopa Clear");
+		s_musicIDs.push_back("Endless Stairs");
+		s_musicIDs.push_back("Ultimate Koopa");
+		s_musicIDs.push_back("Credits");
+		s_musicIDs.push_back("Correct Solution");
+		s_musicIDs.push_back("Toad's Message");
+		s_musicIDs.push_back("Peach's Message");
+		s_musicIDs.push_back("Opening Cutscene");
+		s_musicIDs.push_back("Ultimate Koopa Clear");
+		s_musicIDs.push_back("Ending Cutscene");
+		s_musicIDs.push_back("File Select");
+		s_musicIDs.push_back("Lakitu's Message");
+	}
+
+	int OldSelected = s_SelectedMusic;
+
+	UiDoListboxStart(&s_SelectedMusic, &MainView, 24.0f, "SM64 Music", "", s_musicIDs.size(), 1, s_SelectedMusic, s_ScrollValue);
+
+	for(uint32_t i=0; i<s_musicIDs.size(); i++)
+	{
+		CListboxItem Item = UiDoListboxNextItem(&s_musicIDs[i]);
+		if(Item.m_Visible)
+		{
+			CUIRect Rect;
+			Item.m_Rect.VSplitLeft(Item.m_Rect.h * 2.0f, &Rect, &Item.m_Rect);
+			Rect.VMargin(6.0f, &Rect);
+			Rect.HMargin(3.0f, &Rect);
+			//ColorRGBA Color(1.0f, 1.0f, 1.0f, 1.0f);
+			//m_pClient->m_CountryFlags.Render(Language.m_CountryCode, &Color, Rect.x, Rect.y, Rect.w, Rect.h);
+			Item.m_Rect.HSplitTop(2.0f, 0, &Item.m_Rect);
+			UI()->DoLabel(&Item.m_Rect, s_musicIDs[i].c_str(), 16.0f, TEXTALIGN_LEFT);
+		}
+	}
+
+	s_SelectedMusic = UiDoListboxEnd(&s_ScrollValue, 0);
+
+	if(OldSelected != s_SelectedMusic)
+	{
+		char buf[32];
+		str_format(buf, sizeof(buf), "mario_music %d", s_SelectedMusic);
+		Console()->ExecuteLine(buf);
+	}
 }
 
 void CMenus::RenderSettingsDDNet(CUIRect MainView)
