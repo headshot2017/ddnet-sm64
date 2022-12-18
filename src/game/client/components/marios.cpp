@@ -273,7 +273,8 @@ void CMarios::OnRender()
 	}
 
 	CMarioMesh *mesh = &m_MarioMeshes[ID];
-	Graphics()->updateAndRenderMario(mesh, &mario->geometry, mario->state.flags, &m_MarioShaderHandle, &m_MarioTexHandle, m_MarioIndices);
+	if (mario->geometry.numTrianglesUsed)
+		Graphics()->updateAndRenderMario(mesh, &mario->geometry, mario->state.flags, &m_MarioShaderHandle, &m_MarioTexHandle, m_MarioIndices);
 }
 
 void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
