@@ -3,8 +3,6 @@
 #ifndef ENGINE_GRAPHICS_H
 #define ENGINE_GRAPHICS_H
 
-#include <GL/glew.h> // hacky
-
 #include "kernel.h"
 #include "warning.h"
 
