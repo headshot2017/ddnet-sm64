@@ -205,7 +205,7 @@ void CMarios::OnRender()
 
 	//CNetObj_PlayerInput *input = (CNetObj_PlayerInput *)Client()->GetInput(Client()->GameTick(g_Config.m_ClDummy), g_Config.m_ClDummy);
 	CNetObj_PlayerInput *input = &GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy];
-	mario->input.stickX = -input->m_Direction;
+	mario->input.stickX = GameClient()->m_Controls.m_aInputDirectionLeft[g_Config.m_ClDummy] ? 1 : GameClient()->m_Controls.m_aInputDirectionRight[g_Config.m_ClDummy] ? -1 : 0;
 	mario->input.stickY = 0;
 	mario->input.buttonA = input->m_Jump;
 	mario->input.buttonB = input->m_Fire & 1;
@@ -241,22 +241,25 @@ void CMarios::OnRender()
 
 	mario->Tick(Client()->RenderFrameTime());
 
-	if (g_Config.m_MarioCustomColors)
+	if (mario->state.flags & MARIO_METAL_CAP)
+	{
+		for (int i=0; i<mario->geometry.numTrianglesUsed; i++)
+		{
+			/*
+			mario->geometry.uv[i*6+0] = 0;
+			mario->geometry.uv[i*6+1] = 0.09090909090909091f;
+			mario->geometry.uv[i*6+2] = 0.09090909090909091f;
+			mario->geometry.uv[i*6+3] = 0;
+			*/
+			for (int j=0; j<9; j++) mario->geometry.color[i*9+j] = 0; // needs fix
+		}
+	}
+	else if (g_Config.m_MarioCustomColors)
 	{
 		ColorRGBA bodyColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClPlayerColorBody).UnclampLighting());
 		ColorRGBA feetColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClPlayerColorFeet).UnclampLighting());
 		for (int i=0; i<mario->geometry.numTrianglesUsed; i++)
 		{
-			if (mario->state.flags & MARIO_METAL_CAP)
-			{
-				/*
-				mario->geometry.uv[i*6+0] = 0;
-				mario->geometry.uv[i*6+1] = 0.09090909090909091f;
-				mario->geometry.uv[i*6+2] = 0.09090909090909091f;
-				mario->geometry.uv[i*6+3] = 0;
-				*/
-				for (int j=0; j<9; j++) mario->geometry.color[i*9+j] = 0; // needs fix
-			}
 			uint8_t r = mario->geometry.color[i*9+0]*255;
 			uint8_t g = mario->geometry.color[i*9+1]*255;
 			uint8_t b = mario->geometry.color[i*9+2]*255;
