@@ -2452,14 +2452,15 @@ void CCommandProcessorFragment_OpenGL2::Cmd_UpdateAndRenderMario(const CCommandB
 	uint32_t *texture = pCommand->m_TextureHandle;
 	uint16_t *indices = pCommand->m_Indices;
 
-	glBindBuffer( GL_ARRAY_BUFFER, mesh->position_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->position, GL_DYNAMIC_DRAW );
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->normal_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->normal, GL_DYNAMIC_DRAW );
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->color_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC3 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->color, GL_DYNAMIC_DRAW );
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->uv_buffer );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( VEC2 ) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->uv, GL_DYNAMIC_DRAW );
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->position_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VEC3) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->position, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->normal_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VEC3) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->normal, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->color_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VEC3) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->color, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->uv_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VEC2) * 3 * SM64_GEO_MAX_TRIANGLES, geometry->uv, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	GLfloat view[16], projection[16];
 	glGetFloatv(GL_PROJECTION_MATRIX, projection);
