@@ -410,7 +410,7 @@ function(set_glob VAR GLOBBING EXTS DIRECTORY) # ...
 endfunction()
 
 function(set_src VAR GLOBBING DIRECTORY) # ...
-  set_glob(${VAR} ${GLOBBING} "c;cpp;h" ${DIRECTORY} ${ARGN})
+  set_glob(${VAR} ${GLOBBING} "c;cpp;h;hpp" ${DIRECTORY} ${ARGN})
   set(${VAR} ${${VAR}} PARENT_SCOPE)
   set(CHECKSUM_SRC ${CHECKSUM_SRC} ${${VAR}} PARENT_SCOPE)
 endfunction()
@@ -2308,6 +2308,8 @@ if(SERVER)
     upnp.h
   )
   set_src(GAME_SERVER GLOB_RECURSE src/game/server
+    ConvexHull/ConvexHull.cpp
+    ConvexHull/ConvexHull.h
     alloc.h
     ddracechat.cpp
     ddracecommands.cpp
@@ -2347,6 +2349,17 @@ if(SERVER)
     gameworld.h
     player.cpp
     player.h
+    quickhull/ConvexHull.hpp
+    quickhull/HalfEdgeMesh.hpp
+    quickhull/MathUtils.hpp
+    quickhull/QuickHull.cpp
+    quickhull/QuickHull.hpp
+    quickhull/Structs/Mesh.hpp
+    quickhull/Structs/Plane.hpp
+    quickhull/Structs/Pool.hpp
+    quickhull/Structs/Ray.hpp
+    quickhull/Structs/Vector3.hpp
+    quickhull/Structs/VertexDataSource.hpp
     save.cpp
     save.h
     score.cpp
@@ -2359,13 +2372,6 @@ if(SERVER)
     teehistorian.h
     teeinfo.cpp
     teeinfo.h
-    quickhull/ConvexHull.hpp
-    quickhull/HalfEdgeMesh.hpp
-    quickhull/MathUtils.hpp
-    quickhull/QuickHull.hpp
-    quickhull/QuickHull.cpp
-	ConvexHull/ConvexHull.cpp
-	ConvexHull/ConvexHull.h
   )
   set(GAME_GENERATED_SERVER
     "src/game/generated/server_data.cpp"
