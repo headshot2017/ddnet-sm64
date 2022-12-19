@@ -162,6 +162,8 @@ bool CMarioCore::addBlock(int x, int y, int *i)
 	if ((*i) >= MAX_SURFACES) return false;
 	bool block = Collision()->CheckPoint(x*32, y*32);
 	if (!block) return false;
+	int indexUp = Collision()->GetPureMapIndex(x*32, y*32-32);
+	bool snow = Collision()->GetTileIndex(indexUp) == TILE_FREEZE || Collision()->GetFTileIndex(indexUp) == TILE_FREEZE;
 
 	struct SM64SurfaceObject obj;
 	memset(&obj.transform, 0, sizeof(struct SM64ObjectTransform));
@@ -236,7 +238,7 @@ bool CMarioCore::addBlock(int x, int y, int *i)
 	{
 		obj.surfaces[ind].type = SURFACE_DEFAULT;
 		obj.surfaces[ind].force = 0;
-		obj.surfaces[ind].terrain = TERRAIN_STONE;
+		obj.surfaces[ind].terrain = snow ? TERRAIN_SNOW : TERRAIN_STONE;
 	}
 
 	if (obj.surfaceCount)
