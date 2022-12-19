@@ -123,25 +123,25 @@ SM64_LIB_FN void sm64_global_init( uint8_t *rom, uint8_t *outTexture, SM64DebugP
 
     memory_init();
 	
-	#if defined(HAVE_WASAPI) && !defined(SM64_NULL_AUDIO)
+	#if HAVE_WASAPI && !defined(SM64_NULL_AUDIO)
 	if (audio_api == NULL && audio_wasapi.init()) {
 		audio_api = &audio_wasapi;
 		DEBUG_PRINT("Audio API: WASAPI");
 	}
 	#endif
-	#if HAVE_PULSE_AUDIO
+	#if HAVE_PULSE_AUDIO && !defined(SM64_NULL_AUDIO)
 	if (audio_api == NULL && audio_pulse.init()) {
 		audio_api = &audio_pulse;
 		DEBUG_PRINT("Audio API: PulseAudio");
 	}
 	#endif
-	#if HAVE_ALSA
+	#if HAVE_ALSA && !defined(SM64_NULL_AUDIO)
 	if (audio_api == NULL && audio_alsa.init()) {
 		audio_api = &audio_alsa;
 		DEBUG_PRINT("Audio API: Alsa");
 	}
 	#endif
-	#if defined(TARGET_WEB) || defined(USE_SDL2)
+	#if (defined(TARGET_WEB) || defined(USE_SDL2)) && !defined(SM64_NULL_AUDIO)
 	if (audio_api == NULL && audio_sdl.init()) {
 		audio_api = &audio_sdl;
 		DEBUG_PRINT("Audio API: SDL");
