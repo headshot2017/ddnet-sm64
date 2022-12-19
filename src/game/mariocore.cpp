@@ -8,16 +8,18 @@
 
 #include "mariocore.h"
 #include "collision.h"
+#include "mapitems.h"
 
 extern "C" {
 	#include <decomp/include/sm64shared.h>
 	#include <decomp/include/surface_terrains.h>
 }
 
-void CMarioCore::Init(CWorldCore *pWorld, CCollision *pCollision, vec2 spawnpos, float scale)
+void CMarioCore::Init(CWorldCore *pWorld, CCollision *pCollision, vec2 spawnpos, float scale, std::map<int, std::vector<vec2>> *pTeleOuts)
 {
 	m_pWorld = pWorld;
 	m_pCollision = pCollision;
+	m_pTeleOuts = pTeleOuts;
 
 	marioId = -1;
 	m_Scale = scale;
@@ -112,6 +114,31 @@ void CMarioCore::Tick(float tickspeed)
 			m_CurrGeometryPos[i*3+0] = (geometry.position[i*3+0]*m_Scale - newPos.x) * drawScale + newPos.x;
 			m_CurrGeometryPos[i*3+1] = (geometry.position[i*3+1]*-m_Scale + 16 - newPos.y) * drawScale + newPos.y;
 			m_CurrGeometryPos[i*3+2] = (geometry.position[i*3+2]*m_Scale- (state.position[2]*m_Scale)) * drawScale + (state.position[2]*m_Scale);
+		}
+
+		// interact with tiles like teleporters
+		for (int y=-round_to_int(m_Scale*10/2.f); y<=0; y++)
+		{
+			for (int x=-1; x<=1; x++)
+			{
+				int index = Collision()->GetPureMapIndex((m_Pos.x + (x*16)), m_Pos.y-2 + (y*32));
+				int z1 = Collision()->IsTeleport(index);
+				int z2 = Collision()->IsEvilTeleport(index);
+
+				if (g_Config.m_MarioTilesTele && (z1 || z2))
+				{
+					int z = z1 ? z1 : z2;
+					if (m_pTeleOuts && !(*m_pTeleOuts)[z - 1].empty())
+					{
+						int TeleOut = m_pWorld->RandomOr0((*m_pTeleOuts)[z - 1].size());
+
+						vec2 outPos = (*m_pTeleOuts)[z - 1][TeleOut];
+						loadNewBlocks(outPos.x/32, outPos.y/32);
+						sm64_set_mario_position(marioId, outPos.x / m_Scale, -outPos.y / m_Scale, 0);
+						if (z2) sm64_set_mario_velocity(marioId, 0, 0, 0); // evil teleport
+					}
+				}
+			}
 		}
 	}
 

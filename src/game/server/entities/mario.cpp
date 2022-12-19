@@ -21,7 +21,16 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 {
 	GameWorld()->InsertEntity(this);
 	m_Owner = owner;
-	m_Core.Init(&GameServer()->m_World.m_Core, Collision(), Pos, g_Config.m_MarioScale/100.f);
+
+	CCharacter *character = GameServer()->GetPlayerChar(m_Owner);
+	if (!character)
+	{
+		GameServer()->SendChatTarget(owner, "You must be in-game to spawn Mario");
+		m_MarkedForDestroy = true;
+		return;
+	}
+
+	m_Core.Init(&GameServer()->m_World.m_Core, Collision(), Pos, g_Config.m_MarioScale/100.f, character->m_pTeleOuts);
 	GameServer()->m_World.m_Core.m_apMarios[owner] = &m_Core;
 
 	if (!m_Core.Spawned())
@@ -36,8 +45,6 @@ CMario::CMario(CGameWorld *pGameWorld, vec2 Pos, int owner) : CEntity(pGameWorld
 	//GameServer()->m_apPlayers[m_Owner]->m_SpectatorID = m_Owner;
 
 	// disable jumps, ground and air speed prediction
-	CCharacter *character = GameServer()->GetPlayerChar(m_Owner);
-	if (!character) return;
 	character->SetJumping(false);
 
 	CTuningParams TuningParams;

@@ -3080,6 +3080,12 @@ void CMenus::RenderSettingsMario(CUIRect MainView)
 		g_Config.m_MarioAttackTees ^= 1;
 	}
 
+	MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_MarioTilesTele, "Mario can use teleporter tiles", g_Config.m_MarioTilesTele, &Button))
+	{
+		g_Config.m_MarioTilesTele ^= 1;
+	}
+
 	static float s_Offset = 0.0f;
 
 	MainView.HSplitTop(5.0f, &Button, &MainView);

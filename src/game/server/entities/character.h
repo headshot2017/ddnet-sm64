@@ -27,6 +27,7 @@ class CCharacter : public CEntity
 	MACRO_ALLOC_POOL_ID()
 
 	friend class CSaveTee; // need to use core
+	friend class CMario; // need to get m_pTeleOuts
 
 public:
 	CCharacter(CGameWorld *pWorld, CNetObj_PlayerInput LastInput);

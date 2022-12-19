@@ -208,6 +208,7 @@ MACRO_CONFIG_INT(MarioInvincible, mario_invincible, 1, 0, 1, CFGFLAG_CLIENT | CF
 MACRO_CONFIG_INT(MarioScale, mario_scale, 75, 1, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Set Mario's scale. Only applies when (re)spawning Mario")
 MACRO_CONFIG_INT(MarioDrawScale, mario_draw_scale, 100, 50, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Set Mario's drawing scale. Relative to mario_scale")
 MACRO_CONFIG_INT(MarioAttackTees, mario_attack_tees, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Whether Mario can attack tees by jumping on them or punching them")
+MACRO_CONFIG_INT(MarioTilesTele, mario_tiles_tele, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_SERVER, "Allow Mario to interact with teleport tiles")
 MACRO_CONFIG_INT(MarioCustomColors, mario_custom_colors, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Mario custom colors mode: 0 = off, 1 = tee colors")
 
 MACRO_CONFIG_INT(ClVideoPauseWithDemo, cl_video_pausewithdemo, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Pause video rendering when demo playing pause")

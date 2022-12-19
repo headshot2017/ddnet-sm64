@@ -12,6 +12,7 @@
 #include <engine/shared/config.h>
 
 #include <game/mariocore.h>
+#include <game/mapitems.h>
 #include <game/client/gameclient.h>
 
 #define SEQUENCE_ARGS(priority, seqId) ((priority << 8) | seqId)
@@ -149,6 +150,28 @@ void CMarios::OnInit()
 
 void CMarios::OnMapLoad()
 {
+	m_TeleOuts.clear();
+
+	// from server/gamemodes/DDRace.cpp InitTeleporter()
+	if(!Collision()->Layers()->TeleLayer())
+		return;
+	int Width = Collision()->Layers()->TeleLayer()->m_Width;
+	int Height = Collision()->Layers()->TeleLayer()->m_Height;
+
+	for(int i = 0; i < Width * Height; i++)
+	{
+		int Number = Collision()->TeleLayer()[i].m_Number;
+		int Type = Collision()->TeleLayer()[i].m_Type;
+		if(Number > 0)
+		{
+			if(Type == TILE_TELEOUT)
+			{
+				m_TeleOuts[Number - 1].push_back(
+					vec2(i % Width * 32 + 16, i / Width * 32 + 16));
+			}
+		}
+	}
+
 	uint32_t surfaceCount = 2;
 	SM64Surface surfaces[surfaceCount];
 
@@ -324,7 +347,7 @@ void CMarios::ConMario(IConsole::IResult *pResult, void *pUserData)
 	if (!pSelf->m_pClient->m_GameWorld.m_Core.m_apMarios[ID])
 	{
 		CMarioCore *mario = new CMarioCore;
-		mario->Init(&pSelf->m_pClient->m_GameWorld.m_Core, pSelf->Collision(), pSelf->m_pClient->m_LocalCharacterPos, g_Config.m_MarioScale/100.f);
+		mario->Init(&pSelf->m_pClient->m_GameWorld.m_Core, pSelf->Collision(), pSelf->m_pClient->m_LocalCharacterPos, g_Config.m_MarioScale/100.f, &pSelf->m_TeleOuts);
 		if (!mario->Spawned())
 		{
 			dbg_msg("libsm64", "Failed to spawn Mario at position %.2f %.2f", pSelf->m_pClient->m_LocalCharacterPos.x/32, pSelf->m_pClient->m_LocalCharacterPos.y/32);

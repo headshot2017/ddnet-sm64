@@ -17,6 +17,7 @@ class CMarioCore
 	friend class CMario;
 	CWorldCore *m_pWorld = nullptr;
 	CCollision *m_pCollision;
+	std::map<int, std::vector<vec2>> *m_pTeleOuts;
 	vec2 m_SpawnPos;
 
 	int marioId;
@@ -40,7 +41,7 @@ public:
 	vec2 m_Pos, m_LastPos, m_CurrPos;
 	float m_LastGeometryPos[SM64_GEO_MAX_TRIANGLES * 9], m_CurrGeometryPos[SM64_GEO_MAX_TRIANGLES * 9];
 
-	void Init(CWorldCore *pWorld, CCollision *pCollision, vec2 spawnpos, float scale);
+	void Init(CWorldCore *pWorld, CCollision *pCollision, vec2 spawnpos, float scale, std::map<int, std::vector<vec2>> *pTeleOuts = nullptr);
 	void Destroy();
 	void Reset();
 	void Tick(float tickspeed);

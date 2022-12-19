@@ -8,12 +8,16 @@
 #include <game/client/render.h>
 #include <game/generated/protocol.h>
 
+#include <map>
+
 extern "C" {
 	#include <libsm64.h>
 }
 
 class CMarios : public CComponent
 {
+	std::map<int, std::vector<vec2>> m_TeleOuts;
+
 public:
 	virtual int Sizeof() const override { return sizeof(*this); }
 	virtual void OnInit() override;
