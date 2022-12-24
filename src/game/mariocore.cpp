@@ -70,7 +70,7 @@ void CMarioCore::Reset()
 
 	//exportMap(spawnX, spawnY);
 
-	loadNewBlocks(m_SpawnPos.x/32, -m_SpawnPos.y/32);
+	loadNewBlocks(m_SpawnPos.x/32, m_SpawnPos.y/32);
 	marioId = sm64_mario_create(spawnX, spawnY, 0, 0,0,0,0);
 
 	if (Spawned())
